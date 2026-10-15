@@ -1,0 +1,744 @@
+{
+  "time": {
+    "to": "now",
+    "from": "now-24h"
+  },
+  "description": "Tiempos, tokens, agentes y fases del ciclo SDD. Filtra por change (sdd_change_id). Las consultas usan max_over_time por serie porque cada proceso del Copilot CLI exporta sus contadores una sola vez. Las sesiones de VS Code se correlacionan por rama sdd/<change>.",
+  "templating": {
+    "list": [
+      {
+        "query": {
+          "query": "label_values(gen_ai_client_inference_usage_input_tokens_total, sdd_change_id)",
+          "refId": "change"
+        },
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "value": [
+            "$__all"
+          ],
+          "text": [
+            "All"
+          ],
+          "selected": true
+        },
+        "definition": "label_values(gen_ai_client_inference_usage_input_tokens_total, sdd_change_id)",
+        "sort": 1,
+        "name": "change",
+        "refresh": 2,
+        "allValue": ".*",
+        "type": "query",
+        "label": "Change",
+        "datasource": {
+          "uid": "prometheus",
+          "type": "prometheus"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "gridPos": {
+        "x": 0,
+        "w": 24,
+        "h": 1,
+        "y": 0
+      },
+      "id": 100,
+      "title": "Resumen",
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "blue"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "type": "stat",
+      "options": {
+        "textMode": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 0,
+        "w": 4,
+        "h": 4,
+        "y": 1
+      },
+      "title": "Tokens de entrada",
+      "targets": [
+        {
+          "refId": "A",
+          "range": false,
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "instant": true,
+          "expr": "sum(max_over_time(gen_ai_client_inference_usage_input_tokens_total{sdd_change_id=~\"$change\"}[$__range]))"
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 1
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "blue"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "type": "stat",
+      "options": {
+        "textMode": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 4,
+        "w": 4,
+        "h": 4,
+        "y": 1
+      },
+      "title": "Tokens de salida",
+      "targets": [
+        {
+          "refId": "A",
+          "range": false,
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "instant": true,
+          "expr": "sum(max_over_time(gen_ai_client_inference_usage_output_tokens_total{sdd_change_id=~\"$change\"}[$__range]))"
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 2
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "blue"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "type": "stat",
+      "options": {
+        "textMode": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 8,
+        "w": 4,
+        "h": 4,
+        "y": 1
+      },
+      "title": "Tokens leídos de caché",
+      "targets": [
+        {
+          "refId": "A",
+          "range": false,
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "instant": true,
+          "expr": "sum(max_over_time(gen_ai_client_inference_usage_cache_read_input_tokens_total{sdd_change_id=~\"$change\"}[$__range]))"
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 3
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "blue"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "type": "stat",
+      "options": {
+        "textMode": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 12,
+        "w": 4,
+        "h": 4,
+        "y": 1
+      },
+      "title": "Llamadas al LLM",
+      "targets": [
+        {
+          "refId": "A",
+          "range": false,
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "instant": true,
+          "expr": "sum(max_over_time(gen_ai_client_operation_duration_seconds_count{gen_ai_operation_name=\"chat\",sdd_change_id=~\"$change\"}[$__range]))"
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 4
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "blue"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "type": "stat",
+      "options": {
+        "textMode": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 16,
+        "w": 4,
+        "h": 4,
+        "y": 1
+      },
+      "title": "Invocaciones de agente",
+      "targets": [
+        {
+          "refId": "A",
+          "range": false,
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "instant": true,
+          "expr": "sum(max_over_time(gen_ai_invoke_agent_duration_seconds_count{sdd_change_id=~\"$change\"}[$__range]))"
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 5
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "value": null,
+                "color": "blue"
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "type": "stat",
+      "options": {
+        "textMode": "auto",
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      },
+      "gridPos": {
+        "x": 20,
+        "w": 4,
+        "h": 4,
+        "y": 1
+      },
+      "title": "Llamadas a herramientas",
+      "targets": [
+        {
+          "refId": "A",
+          "range": false,
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "instant": true,
+          "expr": "sum(max_over_time(github_copilot_tool_call_count_total{sdd_change_id=~\"$change\"}[$__range]))"
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 6
+    },
+    {
+      "type": "row",
+      "gridPos": {
+        "x": 0,
+        "w": 24,
+        "h": 1,
+        "y": 5
+      },
+      "id": 101,
+      "title": "Por change · agente · modelo",
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "type": "bargauge",
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "gridPos": {
+        "x": 0,
+        "w": 8,
+        "h": 8,
+        "y": 6
+      },
+      "title": "Tokens (entrada + salida) por change — tendencia C0 → C8",
+      "targets": [
+        {
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "refId": "A",
+          "legendFormat": "{{sdd_change_id}}",
+          "expr": "sum by (sdd_change_id) (max_over_time(gen_ai_client_inference_usage_input_tokens_total{sdd_change_id=~\"$change\"}[$__range])) + sum by (sdd_change_id) (max_over_time(gen_ai_client_inference_usage_output_tokens_total{sdd_change_id=~\"$change\"}[$__range]))"
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 7
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "type": "bargauge",
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "gridPos": {
+        "x": 8,
+        "w": 8,
+        "h": 8,
+        "y": 6
+      },
+      "title": "Tiempo de agente por agente",
+      "targets": [
+        {
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "refId": "A",
+          "legendFormat": "{{gen_ai_agent_name}}",
+          "expr": "sum by (gen_ai_agent_name) (max_over_time(gen_ai_invoke_agent_duration_seconds_sum{sdd_change_id=~\"$change\"}[$__range]))"
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 8
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "type": "bargauge",
+      "options": {
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true,
+        "reduceOptions": {
+          "values": false,
+          "fields": "",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "gridPos": {
+        "x": 16,
+        "w": 8,
+        "h": 8,
+        "y": 6
+      },
+      "title": "Llamadas a herramientas por herramienta y resultado",
+      "targets": [
+        {
+          "instant": true,
+          "range": false,
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "refId": "A",
+          "legendFormat": "{{gen_ai_tool_name}} ({{success}})",
+          "expr": "sum by (gen_ai_tool_name, success) (max_over_time(github_copilot_tool_call_count_total{sdd_change_id=~\"$change\"}[$__range]))"
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 9
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "type": "bargauge",
+      "options": {
+        "reduceOptions": {
+          "fields": "",
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "gridPos": {
+        "x": 0,
+        "w": 12,
+        "h": 8,
+        "y": 14
+      },
+      "title": "Tokens (entrada + salida) por modelo",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "legendFormat": "{{gen_ai_request_model}}",
+          "expr": "sum by (gen_ai_request_model) (max_over_time(gen_ai_client_inference_usage_input_tokens_total{sdd_change_id=~\"$change\"}[$__range])) + sum by (gen_ai_request_model) (max_over_time(gen_ai_client_inference_usage_output_tokens_total{sdd_change_id=~\"$change\"}[$__range]))",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 10
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "s",
+          "decimals": 2
+        },
+        "overrides": []
+      },
+      "type": "bargauge",
+      "options": {
+        "reduceOptions": {
+          "fields": "",
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "displayMode": "gradient",
+        "orientation": "horizontal",
+        "showUnfilled": true
+      },
+      "gridPos": {
+        "x": 12,
+        "w": 12,
+        "h": 8,
+        "y": 14
+      },
+      "title": "Time to first token p95 por modelo",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "uid": "prometheus",
+            "type": "prometheus"
+          },
+          "legendFormat": "{{gen_ai_request_model}}",
+          "expr": "histogram_quantile(0.95, sum by (le, gen_ai_request_model) (max_over_time(gen_ai_client_operation_time_to_first_chunk_seconds_bucket{sdd_change_id=~\"$change\"}[$__range])))",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "datasource": {
+        "uid": "prometheus",
+        "type": "prometheus"
+      },
+      "id": 11
+    },
+    {
+      "type": "row",
+      "gridPos": {
+        "x": 0,
+        "w": 24,
+        "h": 1,
+        "y": 22
+      },
+      "id": 102,
+      "title": "Trazas (Tempo)",
+      "collapsed": false,
+      "panels": []
+    },
+    {
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "w": 24,
+        "h": 9,
+        "y": 23
+      },
+      "id": 12,
+      "title": "Fases SDD (sdd-phase.ps1)",
+      "datasource": {
+        "uid": "tempo",
+        "type": "tempo"
+      },
+      "targets": [
+        {
+          "query": "{ resource.service.name = \"sdd-process\" && resource.sdd.change_id =~ \"$change\" }",
+          "spss": 10,
+          "limit": 100,
+          "datasource": {
+            "uid": "tempo",
+            "type": "tempo"
+          },
+          "queryType": "traceql",
+          "refId": "A",
+          "tableType": "spans"
+        }
+      ]
+    },
+    {
+      "type": "table",
+      "gridPos": {
+        "x": 0,
+        "w": 24,
+        "h": 10,
+        "y": 32
+      },
+      "id": 13,
+      "title": "Sesiones de agentes y subagentes",
+      "datasource": {
+        "uid": "tempo",
+        "type": "tempo"
+      },
+      "targets": [
+        {
+          "query": "{ name =~ \"invoke_agent.*\" && (resource.sdd.change_id =~ \"$change\" || span.github.copilot.git.branch =~ \"sdd/$change\") }",
+          "spss": 10,
+          "limit": 100,
+          "datasource": {
+            "uid": "tempo",
+            "type": "tempo"
+          },
+          "queryType": "traceql",
+          "refId": "A",
+          "tableType": "spans"
+        }
+      ]
+    }
+  ],
+  "version": 2,
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "title": "SDD · Proceso de agentes",
+  "tags": [
+    "sdd",
+    "copilot",
+    "genai"
+  ],
+  "uid": "sdd-process",
+  "editable": true
+}

@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "type": "command", "bash": "./scripts/hooks/log-event.sh sessionStart", "powershell": "pwsh -NoProfile -File ./scripts/hooks/log-event.ps1 -Event sessionStart", "timeoutSec": 10 }
+    ],
+    "sessionEnd": [
+      { "type": "command", "bash": "./scripts/hooks/log-event.sh sessionEnd", "powershell": "pwsh -NoProfile -File ./scripts/hooks/log-event.ps1 -Event sessionEnd", "timeoutSec": 10 }
+    ],
+    "subagentStart": [
+      { "type": "command", "bash": "./scripts/hooks/log-event.sh subagentStart", "powershell": "pwsh -NoProfile -File ./scripts/hooks/log-event.ps1 -Event subagentStart", "timeoutSec": 10 }
+    ],
+    "subagentStop": [
+      { "type": "command", "bash": "./scripts/hooks/log-event.sh subagentStop", "powershell": "pwsh -NoProfile -File ./scripts/hooks/log-event.ps1 -Event subagentStop", "timeoutSec": 10 }
+    ],
+    "postToolUseFailure": [
+      { "type": "command", "bash": "./scripts/hooks/log-event.sh postToolUseFailure", "powershell": "pwsh -NoProfile -File ./scripts/hooks/log-event.ps1 -Event postToolUseFailure", "timeoutSec": 10 }
+    ],
+    "errorOccurred": [
+      { "type": "command", "bash": "./scripts/hooks/log-event.sh errorOccurred", "powershell": "pwsh -NoProfile -File ./scripts/hooks/log-event.ps1 -Event errorOccurred", "timeoutSec": 10 }
+    ]
+  }
+}

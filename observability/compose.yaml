@@ -1,0 +1,33 @@
+# Local observability stack for the SDD agent process (decision D-06).
+#   docker compose -f observability/compose.yaml up -d
+#   Grafana:  http://localhost:3000   (dashboard "SDD · Proceso de agentes")
+#   OTLP:     http://localhost:4318 (HTTP) · localhost:4317 (gRPC)
+# All ports are bound to 127.0.0.1: Grafana runs with anonymous admin access.
+name: sdd-observability
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.162.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./otel-collector.yaml:/etc/otelcol/config.yaml:ro
+      - ../.sdd/telemetry:/telemetry
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+    depends_on:
+      - lgtm
+    restart: unless-stopped
+
+  lgtm:
+    image: grafana/otel-lgtm:0.36.0
+    volumes:
+      - lgtm-data:/data
+      - ./grafana/provisioning/sdd-dashboards.yaml:/otel-lgtm/grafana/conf/provisioning/dashboards/sdd-dashboards.yaml:ro
+      - ./dashboards:/otel-lgtm/sdd-dashboards:ro
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
+
+volumes:
+  lgtm-data:

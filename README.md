@@ -6,6 +6,7 @@ Demo de **Spec-Driven Development** con [OpenSpec](https://github.com/Fission-AI
 - 🗺️ [Roadmap](./ROADMAP.md)
 - ✅ [Registro de decisiones](./docs/decisions.md)
 - 🔬 Spikes: [VS Code agents](./docs/spikes/vscode-agents.md) · [Copilot CLI](./docs/spikes/copilot-cli.md)
+- 📈 [Observabilidad del proceso de agentes](./observability/README.md)
 
 > Estado: **Fase F1 — Repositorio y gobierno** (PR #1 en revisión).
 
