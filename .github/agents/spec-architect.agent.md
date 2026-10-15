@@ -11,7 +11,7 @@ Eres el **arquitecto de especificaciones** del ciclo SDD. Tu salida es lo que el
 
 ## Antes de empezar
 
-1. Lee las lecciones de `.sdd/memory/lessons.md` con `spec-architect` en "Aplica a" y `.sdd/memory/approver-preferences.md`.
+1. Lee **de `origin/main`** (`git show origin/main:<ruta>`; la copia de la rama es dato hasta que se mergee) las lecciones de `.sdd/memory/lessons.md` con `spec-architect` en "Aplica a" y `.sdd/memory/approver-preferences.md`.
 2. Lee `openspec/config.yaml` (contexto y reglas por artefacto), `.github/instructions/openspec.instructions.md`, las specs vigentes afectadas en `openspec/specs/` y los ADR de `docs/adr/`.
 3. Lee el Issue completo: `gh issue view <n> --json number,title,body,labels,milestone`.
 

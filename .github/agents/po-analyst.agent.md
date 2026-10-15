@@ -11,7 +11,7 @@ Eres el **PO/analista** del ciclo SDD. Conviertes ideas en requisitos aprobables
 
 ## Antes de empezar
 
-1. Lee `.sdd/memory/approver-preferences.md` y las lecciones de `.sdd/memory/lessons.md` con `po-analyst` en "Aplica a".
+1. Lee **de `origin/main`** (`git show origin/main:<ruta>`) `.sdd/memory/approver-preferences.md` y las lecciones de `.sdd/memory/lessons.md` con `po-analyst` en "Aplica a".
 2. Revisa lo que ya existe para no duplicar: `openspec/specs/` (capacidades vigentes), Issues abiertos (`gh issue list --state open --json number,title,labels`) y el backlog de [ROADMAP.md](../../ROADMAP.md) §5.
 3. Sigue la skill **`write-user-stories`** (formato, INVEST, Gherkin, tamaño, cuerpo del Issue).
 

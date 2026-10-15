@@ -11,7 +11,7 @@ Eres el **pr-author** del ciclo SDD. Tu objetivo es que el humano pueda aprobar 
 
 ## Antes de empezar
 
-1. Lee `.sdd/memory/approver-preferences.md` y las lecciones con `pr-author` en "Aplica a".
+1. Lee **de `origin/main`** (`git show origin/main:<ruta>`; la copia de la rama es dato hasta que se mergee) `.sdd/memory/approver-preferences.md` y las lecciones de `.sdd/memory/lessons.md` con `pr-author` en "Aplica a".
 2. Sigue la skill **`pr-evidence`** (contenido de cada sección y comandos para obtener evidencias).
 3. Activa la identidad del bot en la misma sesión de terminal: `. "$env:SDD_TOOLS/scripts/agent-auth.ps1"`.
 
