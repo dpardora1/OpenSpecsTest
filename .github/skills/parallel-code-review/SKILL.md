@@ -15,6 +15,8 @@ license: MIT
 | `reviewer-security` | OWASP/ASVS, autorización, IDOR, datos, dependencias | Grok |
 | `reviewer-tests` | Trazabilidad, calidad de aserciones, determinismo, concurrencia | Claude Sonnet |
 
+Si el modelo preferido no está disponible se usa el fallback del agente, que puede repetir familia (p. ej. `reviewer-tests` → GPT-5.6 Sol). Queda registrado en la columna **Modelo** de la tabla resumen para que el aprobador lo vea.
+
 ## Lanzamiento
 
 **Modo A — subagentes (VS Code / CLI interactivo):** en **una sola respuesta** emite las 4 invocaciones de subagente. Prompt para cada uno (autocontenido):
@@ -27,7 +29,14 @@ license: MIT
 ./scripts/parallel-review.ps1 -Change <id> -Iteration <i>
 ```
 
-Lanza 4 procesos de Copilot CLI en paralelo (cada uno con el modelo de su agente y telemetría `sdd.phase=review`), guarda los informes en `.sdd/reviews/<id>/iter-<i>/` y escribe `consolidated.md` + `consolidated.json`. Sale con código 1 si hay bloqueantes.
+Lanza 4 procesos de Copilot CLI en paralelo (cada uno con el modelo de su agente y telemetría `sdd.phase=review`), guarda los informes en `.sdd/reviews/<id>/iter-<i>/` y escribe `consolidated.md` + `consolidated.json`. Sale con código 1 si hay bloqueantes y 2 si algún revisor falló o devolvió un informe inválido.
+
+Garantías del modo B:
+- **Aislado:** cada revisión corre en un *git worktree* temporal fuera de las carpetas de confianza, así que los hooks de una rama no revisada no se ejecutan y la copia de trabajo no se toca.
+- **Solo lectura:** solo herramientas de lectura/búsqueda y una lista blanca de comandos (`git diff/log/show`, `openspec show/validate`, `dotnet build/test/list`); sin `--allow-all-tools`, sin tokens de GitHub y sin MCP integrados.
+- **Revisores de confianza:** las definiciones `reviewer-*.agent.md` se toman de `origin/main` si existen, así que un change no puede reescribir a sus propios revisores.
+
+En el modo A (subagentes) los revisores comparten el workspace: sus herramientas ya son de solo lectura (`read`, `search`, `execute`), pero si el change modifica `.github/agents/`, `.github/hooks/` o `scripts/`, usa el modo B.
 
 ## Contrato de salida de cada revisor
 
@@ -40,13 +49,13 @@ Veredicto: APPROVE | REQUEST_CHANGES
 
 ## Consolidación (determinista)
 
-1. Normaliza cada fila: severidad (`BLOCKER|HIGH|MEDIUM|LOW`), fichero, línea, confianza.
-2. **Deduplica**: mismo fichero y líneas a ≤ 5 de distancia con la misma idea → un único hallazgo con la lista de revisores. Coincidencia de ≥ 2 revisores = +2 de confianza (máx. 10).
+1. Normaliza cada fila: severidad (`BLOCKER|HIGH|MEDIUM|LOW`), fichero, línea, confianza. Un informe sin veredicto válido, con filas no interpretables o con `REQUEST_CHANGES` sin hallazgos es un **informe inválido** (= revisión fallida).
+2. **Deduplica**: mismo fichero **y** misma idea (líneas a ≤ 5 de distancia con texto parecido, o texto muy parecido aunque no haya línea) → un único hallazgo con la lista de revisores. La severidad y la confianza son las del hallazgo principal; coincidencia de ≥ 2 revisores = +2 de confianza (máx. 10).
 3. **Bloqueante** = severidad en `blockingSeverities` (`BLOCKER`, `HIGH`) **y** confianza ≥ `blockingMinConfidence` (7), según `.sdd/sdd.config.json`.
 4. Decisión:
    - Sin bloqueantes → continuar a `archive`.
    - Con bloqueantes e iteración < 3 → `implementer` en modo `fix` con la lista → quality gate → nueva iteración.
-   - Con bloqueantes en la iteración 3 → PR en **draft** con label `blocked-by-review` y la decisión pendiente explicada al humano.
+   - Con bloqueantes en la iteración 3 → **salida bloqueada**: no se archiva el change; PR en **draft** con label `blocked-by-review` y la decisión pendiente explicada al humano.
 5. `MEDIUM`/`LOW` y bloqueantes con baja confianza → "Observaciones no bloqueantes" en la PR.
 
 ## Tabla resumen para la PR

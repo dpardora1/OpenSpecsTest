@@ -19,7 +19,7 @@ flowchart LR
 ## Arranque
 
 ```powershell
-./scripts/bootstrap/enable-agent-telemetry.ps1     # una vez por máquina: ajustes de usuario de VS Code + carpeta de confianza del CLI
+./scripts/bootstrap/enable-agent-telemetry.ps1 -TrustRepo   # una vez por máquina: ajustes de usuario de VS Code (+ hooks del CLI, opcional)
 docker compose -f observability/compose.yaml up -d
 ```
 
@@ -62,7 +62,7 @@ Los tokens se suman desde los spans `chat` (los `invoke_agent` llevan totales de
 
 ## Lecciones de la puesta en marcha (F3)
 
-- **Los hooks del repo solo se ejecutan en carpetas de confianza.** En Copilot CLI la lista está en `~/.copilot/config.json` → `trustedFolders` (no en `settings.json`). `enable-agent-telemetry.ps1` la configura (lección L-001).
+- **Los hooks del repo solo se ejecutan en carpetas de confianza.** En Copilot CLI la lista está en `~/.copilot/config.json` → `trustedFolders` (no en `settings.json`). `enable-agent-telemetry.ps1 -TrustRepo` la configura de forma **explícita**: la confianza es por carpeta, así que cualquier rama que se haga checkout ahí ejecutará sus hooks. Las revisiones se aíslan en un worktree no confiable (lección L-001).
 - **Los ajustes OTel de Copilot Chat son de usuario**, no de workspace (lección L-002).
 - **Procesos de vida corta:** cada ejecución del CLI exporta sus contadores una sola vez al terminar, así que `rate()`/`increase()` no devuelven nada. El dashboard usa `max_over_time(...[$__range])` por serie.
 - **Grafana LGTM solo lee el aprovisionamiento de dashboards al arrancar:** tras editar `dashboards/*.json`, ejecuta `docker compose -f observability/compose.yaml restart lgtm`.

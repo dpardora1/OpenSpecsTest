@@ -1,7 +1,7 @@
 ---
 name: pr-author
-description: Publica la rama del change y abre la PR (de spec o de implementación) como sdd-agent-mapps[bot], rellenando la plantilla con todas las evidencias para que el humano apruebe en minutos.
-argument-hint: "<change-id> spec|implementation"
+description: Publica la rama del change y abre la PR (de spec, de implementación o de proceso) como sdd-agent-mapps[bot], rellenando la plantilla con todas las evidencias para que el humano apruebe en minutos.
+argument-hint: "<change-id> spec|implementation|process"
 tools: ['read', 'search', 'execute']
 model: ['Claude Haiku 5.5', 'GPT-5.4 mini']
 user-invocable: false
@@ -23,11 +23,15 @@ Eres el **pr-author** del ciclo SDD. Tu objetivo es que el humano pueda aprobar 
 ## PR de implementación (`implementation`)
 
 - Título: `feat(<capability>): <resumen> (<change-id>)`. Labels: `implementation`. Milestone: el del Issue. Cuerpo con la plantilla `.github/pull_request_template.md` completa: `Closes #<issue>`, escenarios → tests, evidencias, tabla de los 4 revisores (modelo, veredicto, bloqueantes resueltos, observaciones abiertas), riesgos, 🧠 lecciones del change y 📈 métricas (`./scripts/sdd-metrics.ps1 -Change <id>`).
-- Si quedan bloqueantes sin resolver tras 3 iteraciones: abre la PR como **draft** con label `blocked-by-review` y explica la decisión que necesita el humano en la primera línea.
+- Si quedan bloqueantes sin resolver tras 3 iteraciones (**salida bloqueada**): abre la PR como **draft** con label `blocked-by-review`, explica en la primera línea la decisión que necesita el humano y deja claro que el change **no se ha archivado**.
+
+## PR de proceso (`process`)
+
+- Título: `chore(process): <resumen>`. Labels: `process`. Cuerpo: lecciones promovidas o podadas (con destino), preferencias nuevas, resumen de tendencia de métricas y qué cambia para los agentes.
 
 ## Procedimiento
 
-1. `git status` limpio; commits en Conventional Commits con el trailer `Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>`.
+1. `git status` debe estar **limpio**: cada agente hace commit de su propio trabajo. Si hay cambios sin commit, **no los commitees tú**: para y devuelve la lista al conductor.
 2. `git push -u origin sdd/<change-id>`.
 3. `gh pr create --base main --head sdd/<change-id> --title … --body-file <fichero temporal> --label … --milestone …` (genera el cuerpo en un fichero temporal fuera del repo para evitar problemas de escape).
 4. Comprueba con `gh pr view --json url,author,labels,milestone` que el autor es `app/sdd-agent-mapps` y devuelve la URL.

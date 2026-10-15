@@ -203,7 +203,7 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 | F5-02 | `scripts/traceability.ps1` (escenarios de deltas ↔ `[Trait("Scenario", …)]`) | 🤖 | Script | F2 | Falla si falta un escenario |
 | F5-03 | `ci.yml`: build, tests, cobertura (ReportGenerator → comentario PR), E2E Playwright (artefactos) | 🤖 | Workflow | F5-01 | Verde sin código / con C0 |
 | F5-04 | `spec-validation.yml`: `openspec validate --all --strict` + trazabilidad | 🤖 | Workflow | F5-02 | Falla con spec inválida |
-| F5-05 | `pr-guardrails.yml`: tamaño (aviso > 400, fallo > 800 líneas de producción), Conventional Commits, label de change | 🤖 | Workflow | F1-04 | Falla con PR enorme de prueba |
+| F5-05 | `pr-guardrails.yml`: tamaño (aviso > 400, fallo > 800 líneas de producción), Conventional Commits, label de change; **cambios en `.github/workflows|hooks|agents` o `scripts/` exigen label `process`** (promoción de L-005) | 🤖 | Workflow | F1-04 | Falla con PR enorme de prueba y con PR de feature que toca `.github/hooks` |
 | F5-06 | `mutation-testing.yml`: Stryker.NET incremental (`--since main`), informativo | 🤖 | Workflow | F5-03 | Score publicado en PR |
 | F5-07 | Contrato API: OpenAPI en build + `oasdiff` contra `main` (se activa en C1) | 🤖 | Paso CI | F5-03 | *Breaking change* detectado en prueba |
 | F5-08 | Migraciones: `dotnet ef migrations has-pending-model-changes` (se activa en C1) | 🤖 | Paso CI | F5-03 | Falla si falta migración |
