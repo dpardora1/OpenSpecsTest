@@ -8,7 +8,7 @@ Demo de **Spec-Driven Development** con [OpenSpec](https://github.com/Fission-AI
 - 🔬 Spikes: [VS Code agents](./docs/spikes/vscode-agents.md) · [Copilot CLI](./docs/spikes/copilot-cli.md)
 - 📈 [Observabilidad del proceso de agentes](./observability/README.md)
 
-> Estado: **Fase F4 — Agentes, skills y memoria** (PR en revisión).
+> Estado: **Fase F5 — Quality gate y CI** (PR en revisión). Quality gate local = CI: `./scripts/quality-gate.ps1`.
 
 ## Cómo trabajan los agentes en este repo
 

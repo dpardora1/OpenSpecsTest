@@ -1,0 +1,109 @@
+# Same quality gate as local (scripts/quality-gate.ps1): process files, PowerShell, Pester, OpenSpec and, once the
+# .NET solution exists, build without warnings, format, tests with coverage and scenario traceability.
+#
+# Trust: this job runs code from the PR branch (builds and tests), so it gets a read-only token and no secrets.
+# The gate itself is the TRUSTED copy from origin/main (as $env:SDD_TOOLS locally, AGENTS.md §3): a PR cannot
+# weaken the control it is judged by. PRs labeled `process` that change scripts/ also run their own version, so
+# changes to the gate are validated too. Changes to this file require the `process` label (pr-guardrails, L-005).
+#
+# Parameters: every non-spec PR from a branch sdd/<id> -> -Change <id> (traceability required). Spec PRs (restricted
+# by pr-guardrails to openspec/ and docs/adr/) and other branches -> no -Change (OpenSpec validation still runs).
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: quality-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout (full history for the diff against main)
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup .NET (version from global.json)
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          global-json-file: global.json
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+
+      - name: Install OpenSpec CLI (pinned, outside the checkout)
+        # Run from RUNNER_TEMP with an explicit registry and no lifecycle scripts: a .npmrc in the PR cannot
+        # redirect the registry or replace the CLI and the 'yaml' module used by the trusted gate.
+        working-directory: ${{ runner.temp }}
+        run: npm install -g @fission-ai/openspec@1.14.2 --registry https://registry.npmjs.org/ --ignore-scripts
+
+      - name: Install Pester 5
+        shell: pwsh
+        run: |
+          if (-not (Get-Module -ListAvailable Pester | Where-Object Version -ge ([version]'5.5.0'))) {
+            Install-Module Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force -SkipPublisherCheck
+          }
+
+      - name: Quality gate
+        shell: pwsh
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          $labels = @(if ($env:PR_LABELS -and $env:PR_LABELS -ne 'null') { $env:PR_LABELS | ConvertFrom-Json })
+          $gateArgs = @{ Base = 'origin/main'; ResultsDir = "$env:RUNNER_TEMP/quality-gate" }
+          New-Item -ItemType Directory -Force $gateArgs.ResultsDir | Out-Null
+
+          if ($env:EVENT_NAME -eq 'pull_request' -and $labels -contains 'implementation' -and $env:HEAD_REF -notmatch '^sdd/[a-z0-9]+(-[a-z0-9]+)*$') {
+            throw "Implementation PRs must come from a branch named sdd/<change-id> (got '$env:HEAD_REF')."
+          }
+          # Any PR from sdd/<id> except spec PRs (which guardrails restrict to openspec/ and docs/adr/) must trace its scenarios.
+          if ($env:EVENT_NAME -eq 'pull_request' -and $labels -notcontains 'spec' -and $env:HEAD_REF -match '^sdd/([a-z0-9]+(-[a-z0-9]+)*)$') {
+            $gateArgs.Change = $Matches[1]
+          }
+
+          # Trusted gate from origin/main (bootstrap: the branch version while the gate does not exist in main).
+          $trusted = Join-Path $env:RUNNER_TEMP 'sdd-tools'
+          New-Item -ItemType Directory -Force $trusted | Out-Null
+          git archive -o "$trusted.tar" origin/main scripts 2>$null
+          if ($LASTEXITCODE -eq 0) { tar -xf "$trusted.tar" -C $trusted }
+          $gates = @()
+          if (Test-Path "$trusted/scripts/quality-gate.ps1") { $gates += @{ name = 'trusted (origin/main)'; path = "$trusted/scripts/quality-gate.ps1" } }
+          $touchesScripts = [bool](git diff --name-only origin/main...HEAD -- scripts/ 2>$null)
+          if (-not $gates -or ($labels -contains 'process' -and $touchesScripts)) {
+            if (-not $gates) { Write-Warning 'scripts/quality-gate.ps1 does not exist in origin/main yet: running the branch version (bootstrap).' }
+            $gates += @{ name = 'branch (this PR)'; path = './scripts/quality-gate.ps1' }
+          }
+
+          $failed = $false
+          foreach ($g in $gates) {
+            "## Gate: $($g.name)" | Add-Content $env:GITHUB_STEP_SUMMARY
+            & $g.path @gateArgs -OutFile "$($gateArgs.ResultsDir)/summary-$($gates.IndexOf($g)).md"
+            if ($LASTEXITCODE -ne 0) { $failed = $true }
+          }
+          if ($failed) { exit 1 }
+
+      - name: Upload quality gate results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: quality-gate
+          path: ${{ runner.temp }}/quality-gate
+          retention-days: 14
+          if-no-files-found: ignore

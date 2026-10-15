@@ -197,19 +197,21 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 
 ### F5 · Calidad y CI — jue 22-oct → **PR #5** → 🏁 **M1**
 
-| ID | Tarea | Ejecuta | Entregable | Depende | Criterio de aceptación |
-|---|---|---|---|---|---|
-| F5-01 | `scripts/quality-gate.ps1` (build `-warnaserror`, format, tests, cobertura, arquitectura, `openspec validate`, trazabilidad) | 🤖 | Script | F2 | Ejecuta en local y en CI con el mismo resultado |
-| F5-02 | `scripts/traceability.ps1` (escenarios de deltas ↔ `[Trait("Scenario", …)]`) | 🤖 | Script | F2 | Falla si falta un escenario |
-| F5-03 | `ci.yml`: build, tests, cobertura (ReportGenerator → comentario PR), E2E Playwright (artefactos) | 🤖 | Workflow | F5-01 | Verde sin código / con C0 |
-| F5-04 | `spec-validation.yml`: `openspec validate --all --strict` + trazabilidad | 🤖 | Workflow | F5-02 | Falla con spec inválida |
-| F5-05 | `pr-guardrails.yml`: tamaño (aviso > 400, fallo > 800 líneas de producción), Conventional Commits, label de change; **cambios en `.github/workflows|hooks|agents` o `scripts/` exigen label `process`** (promoción de L-005) | 🤖 | Workflow | F1-04 | Falla con PR enorme de prueba y con PR de feature que toca `.github/hooks` |
-| F5-06 | `mutation-testing.yml`: Stryker.NET incremental (`--since main`), informativo | 🤖 | Workflow | F5-03 | Score publicado en PR |
-| F5-07 | Contrato API: OpenAPI en build + `oasdiff` contra `main` (se activa en C1) | 🤖 | Paso CI | F5-03 | *Breaking change* detectado en prueba |
-| F5-08 | Migraciones: `dotnet ef migrations has-pending-model-changes` (se activa en C1) | 🤖 | Paso CI | F5-03 | Falla si falta migración |
-| F5-09 | Marcar checks como requeridos en el ruleset | 🤖 | Ruleset | F5-03..05 | PR sin checks no mergeable |
-| ⛩️ | **Aprobar PR #5** | 👤 | — | — | 🏁 **M1** |
+> **Estado (15-oct):** F5-01…F5-05 y F5-09 entregados. F5-06…F5-08 y CodeQL necesitan código .NET real para verificarse, así que pasan a los changes que lo introducen: **C0** (CodeQL, mutación) y **C1** (contrato API, migraciones, E2E). Detalle de MTP en [docs/spikes/dotnet-testing.md](./docs/spikes/dotnet-testing.md).
 
+| ID | Tarea | Ejecuta | Entregable | Depende | Criterio de aceptación | Estado |
+|---|---|---|---|---|---|---|
+| F5-01 | `scripts/quality-gate.ps1`: proceso (customizations, PowerShell, Pester, OpenSpec) + .NET si hay solución (build `-warnaserror`, format, tests con cobertura y TRX) + cobertura de ficheros cambiados ≥ 80 % + trazabilidad | 🤖 | Script + `scripts/lib/SddQuality.psm1` | F2 | Mismo resultado en local y en CI; ruta .NET probada de extremo a extremo | ✅ |
+| F5-02 | `scripts/traceability.ps1`: escenarios ADDED/MODIFIED ↔ traits del **TRX** (lo que se ejecutó), con respaldo en el código fuente | 🤖 | Script + 15 tests Pester | F2 | Falla si un escenario no tiene test o su test falla | ✅ |
+| F5-03 | `ci.yml`: job `quality-gate` con token de solo lectura que ejecuta **la copia del gate de `origin/main`** (más la de la rama en PRs `process` que tocan `scripts/`). Parámetros según el label: `implementation` → `-Change <id>` de la rama `sdd/<id>`; resultados como artefacto y *job summary* | 🤖 | Workflow | F5-01 | Verde sin código; .NET se activa solo con C0 | ✅ |
+| F5-04 | ~~`spec-validation.yml`~~ → **integrado en el quality gate** (pasos `openspec` y `traceability`), así no hay dos fuentes de verdad | 🤖 | — | F5-02 | Falla con spec inválida | ✅ |
+| F5-05 | `pr-guardrails.yml` sobre **`pull_request_target`** (el YAML siempre viene de `main`; publica el estado `sdd/guardrails` en el commit de la PR): título Conventional Commits, un label de tipo, **rutas del proceso exigen `process`** (promoción de L-005; excepción para Dependabot solo con cambios `uses:` por SHA), PR de spec solo con specs, tamaño (aviso > 400, fallo > 800) | 🤖 | Workflow | F1-04 | Falla con PR enorme de prueba y con PR de feature que toca `.github/hooks` | ✅ |
+| F5-06 | Stryker.NET incremental (`--since main`), informativo | 🤖 | Workflow | C0 | Score publicado | ⏭️ C0 |
+| F5-07 | Contrato API: OpenAPI en build + `oasdiff` contra `main` | 🤖 | Paso CI | C1 | *Breaking change* detectado en prueba | ⏭️ C1 |
+| F5-08 | Migraciones: `dotnet ef migrations has-pending-model-changes` | 🤖 | Paso del gate | C1 | Falla si falta migración | ⏭️ C1 |
+| F5-09 | Checks requeridos en el ruleset de `main`: `quality-gate` (en esta PR) y `sdd/guardrails` (justo tras el merge, porque `pull_request_target` solo existe cuando el workflow está en `main`) | 🤖 | Ruleset | F5-03..05 | PR sin checks no mergeable | 🔄 |
+| F5-10 | `lesson-candidate.yml` captura también los **comentarios generales** del aprobador | 🤖 | Workflow | F4-10 | `dry_run` lista el comentario de la PR #4 | ✅ |
+| ⛩️ | **Aprobar PR #5** | 👤 | — | — | 🏁 **M1** | |
 ### F6 · Backlog de producto + C0 `bootstrap-solution` — vie 23-oct → 🏁 **M2**
 
 | ID | Tarea | Ejecuta | Entregable | Depende | Criterio de aceptación |
@@ -219,7 +221,7 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 | ⛩️ G1 | **Gate 1: aprobar el backlog** (label `approved`, comentar ajustes) | 👤 | — | F6-02 | — |
 | F6-03 | C0 propuesta: `/opsx-propose bootstrap-solution` | 🤖 `spec-architect` | Change C0 | G1 | `openspec validate` OK |
 | ⛩️ G2 | **Gate 2: aprobar spec C0** | 👤 | PR spec | F6-03 | — |
-| F6-04 | C0 implementación: `.slnx`, AppHost, ServiceDefaults, Domain, Api, Web, 4 proyectos de test, `Directory.*.props`, health checks, test de arquitectura base | 🤖 `implementer` | Código | G2 | `quality-gate.ps1` verde; AppHost levanta API + Web + Postgres |
+| F6-04 | C0 implementación: `.slnx`, AppHost, ServiceDefaults, Domain, Api, Web, 4 proyectos de test (MTP, ver [spike](./docs/spikes/dotnet-testing.md)), `Directory.*.props`, health checks, test de arquitectura base, **CodeQL** y **Stryker.NET** (de F5) | 🤖 `implementer` | Código | G2 | `quality-gate.ps1` verde; AppHost levanta API + Web + Postgres |
 | F6-05 | `/opsx-verify` + 4 revisiones en paralelo + archivo + lecciones + métricas | 🤖 | Informes | F6-04 | 0 bloqueantes |
 | F6-06 | PR C0 con plantilla completa | 🤖 `pr-author` | PR | F6-05 | CI verde + Copilot Code Review |
 | ⛩️ G3 | **Gate 3: aprobar y mergear C0** | 👤 | — | F6-06 | 🏁 **M2** |
@@ -243,7 +245,7 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 |---|---|---|---|---|---|
 | F8-01 | `/sdd-deliver #C1` en modo completamente autónomo hasta Gate 2 y Gate 3 | 🤖 `sdd-conductor` | Spec + código + PR | F7 | CI verde; trazabilidad 100 % |
 | ⛩️ G2 / G3 | **Aprobar spec y PR de C1** | 👤 | — | — | — |
-| F8-02 | Activar `oasdiff` y la comprobación de migraciones (primer endpoint y primera tabla) | 🤖 | CI | F8-01 | Checks requeridos |
+| F8-02 | Activar `oasdiff`, la comprobación de migraciones y el E2E con Playwright (primer endpoint, tabla y pantalla; de F5) | 🤖 | CI | F8-01 | Checks requeridos |
 | F8-03 | Retrospectiva 1: comparar C1 vs C0 (tiempo, tokens, iteraciones), ajustar instrucciones/skills | 🤖 `retrospective` | Informe + ajustes en la PR de C1 | F8-01 | 🏁 **M3** |
 
 ### F9 · Producto C2–C8 + aprendizaje — 28-oct → 04-nov → 🏁 **M4** / **M5**

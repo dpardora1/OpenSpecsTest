@@ -93,8 +93,8 @@ Specs, Issues, PRs y documentación: **español**. Código, identificadores, men
 |---|---|
 | Estado de un change | `openspec status --change <id> --json` · `openspec show <id> --json` |
 | Validar specs | `openspec validate --all --strict` |
-| Quality gate (local = CI) | `& "$env:SDD_TOOLS/scripts/quality-gate.ps1"` *(fase F5)* |
-| Trazabilidad escenario → test | `& "$env:SDD_TOOLS/scripts/traceability.ps1" -Change <id>` *(fase F5)* |
+| Quality gate (local = CI) | `& "$env:SDD_TOOLS/scripts/quality-gate.ps1" [-Change <id>]` |
+| Trazabilidad escenario → test | `& "$env:SDD_TOOLS/scripts/traceability.ps1" -Change <id> [-ResultsDir <trx>]` |
 | Revisión paralela (aislada, solo lectura; ejecuta la copia de `origin/main`) | ver skill `parallel-code-review` · `& $tool -Change <id> -Iteration <n>` |
 | Tests de los scripts del proceso | `Invoke-Pester ./tests/scripts` |
 | Mover tarjeta del tablero | `& "$env:SDD_TOOLS/scripts/sdd-board.ps1" -Issue <n> -Status dev` |

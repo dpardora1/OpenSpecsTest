@@ -1,0 +1,110 @@
+# Deterministic PR rules (AGENTS.md §2 and lesson L-005).
+#
+# Trust: runs on `pull_request_target`, so the workflow ALWAYS comes from the default branch: a PR cannot weaken the
+# guardrails that judge it. It never checks out or runs PR code and only reads PR metadata through the API.
+# It reports the result as the commit status `sdd/guardrails` on the PR head commit (the context required by the
+# ruleset), because check runs of pull_request_target are attached to the base branch.
+#   - Title: Conventional Commits (it becomes the squash commit message)
+#   - Exactly one type label: spec | implementation | process | dependencies
+#   - L-005: changes to agents, skills, prompts, instructions, hooks, workflows, AGENTS.md, scripts/, tests/scripts/,
+#     the SDD config, .npmrc or nuget.config require the `process` label. Exception: Dependabot PRs labeled
+#     `dependencies` whose workflow changes only touch `uses:` lines pinned by SHA.
+#   - `spec` PRs only touch openspec/changes/ and docs/adr/
+#   - Product code or tests (src/, tests/ except tests/scripts/) only in `implementation` PRs from sdd/<change-id>
+#   - Size: production lines (src/**, excluding migrations and generated code) warn > 400, fail > 800
+name: PR guardrails
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: read
+  statuses: write
+
+concurrency:
+  group: guardrails-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  guardrails:
+    name: guardrails
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check PR rules
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+            const runUrl = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
+            const setStatus = (state, description) => github.rest.repos.createCommitStatus({
+              owner, repo, sha: pr.head.sha, state, context: 'sdd/guardrails', target_url: runUrl, description: description.slice(0, 140),
+            });
+            await setStatus('pending', 'Comprobando reglas de la PR…');
+
+            const errors = [];
+            const warnings = [];
+            const checks = [];
+            try {
+              const titleOk = /^(feat|fix|docs|test|refactor|perf|style|build|ci|chore|spec|revert)(\([a-z0-9][a-z0-9-]*\))?!?: \S.+$/.test(pr.title);
+              checks.push(['Título Conventional Commits', titleOk, pr.title]);
+              if (!titleOk) errors.push('El título debe seguir Conventional Commits, p. ej. `feat(bookings): crear reserva (add-create-booking)`.');
+
+              const typeLabels = ['spec', 'implementation', 'process', 'dependencies'];
+              const labels = pr.labels.map((l) => l.name);
+              const types = labels.filter((l) => typeLabels.includes(l));
+              checks.push(['Un label de tipo', types.length === 1, types.join(', ') || '—']);
+              if (types.length !== 1) errors.push(`Debe tener exactamente un label de tipo (${typeLabels.join(' | ')}); tiene: ${types.join(', ') || 'ninguno'}.`);
+
+              const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number: pr.number, per_page: 100 });
+              const names = files.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean));
+
+              const processPath = /^(AGENTS\.md|\.github\/(agents|skills|prompts|instructions|hooks|workflows)\/|\.github\/copilot-instructions\.md$|scripts\/|tests\/scripts\/|\.sdd\/sdd\.config\.json$|(.*\/)?\.npmrc$|(.*\/)?nuget\.config$)/i;
+              const touched = files.filter((f) => processPath.test(f.filename) || (f.previous_filename && processPath.test(f.previous_filename)));
+              // Dependabot exception: only workflow files, and only `uses:` lines pinned by SHA (plus version comments) change.
+              const usesOnly = (f) => f.filename.startsWith('.github/workflows/') && f.status === 'modified' && typeof f.patch === 'string' &&
+                f.patch.split('\n').filter((l) => /^[+-]/.test(l) && !/^(\+\+\+|---)/.test(l))
+                  .every((l) => /^[+-]\s*(-\s*)?uses:\s*[\w.-]+\/[\w./-]+@[0-9a-f]{40}(\s+#.*)?\s*$/.test(l) || /^[+-]\s*#/.test(l) || /^[+-]\s*$/.test(l));
+              const dependabotOk = pr.user.login === 'dependabot[bot]' && labels.includes('dependencies') && touched.length > 0 && touched.every(usesOnly);
+              const processOk = touched.length === 0 || labels.includes('process') || dependabotOk;
+              checks.push(['L-005 · rutas del proceso con label `process`', processOk, touched.length ? `${touched.length} fichero(s)${dependabotOk ? ' (Dependabot: solo `uses:` por SHA)' : ''}` : 'no toca rutas del proceso']);
+              if (!processOk) errors.push(`Toca ficheros del proceso SDD y necesita el label \`process\` (lección L-005): ${touched.slice(0, 10).map((f) => f.filename).join(', ')}${touched.length > 10 ? '…' : ''}`);
+
+              if (labels.includes('spec')) {
+                const outside = names.filter((n) => !/^(openspec\/changes\/|docs\/adr\/)/.test(n));
+                checks.push(['PR de spec solo con artefactos de spec', outside.length === 0, outside.length ? `${outside.length} fichero(s) fuera` : 'OK']);
+                if (outside.length) errors.push(`Una PR de spec solo puede tocar openspec/changes/ y docs/adr/: ${outside.slice(0, 10).join(', ')}`);
+              }
+
+              // Product code and product tests only arrive through the SDD cycle: label `implementation` from sdd/<change-id>,
+              // so CI traces the change's scenarios (it passes -Change for every non-spec PR from sdd/<id>).
+              const product = names.filter((n) => /^src\//i.test(n) || (/^tests\//i.test(n) && !/^tests\/scripts\//i.test(n)));
+              const productOk = product.length === 0 || (labels.includes('implementation') && /^sdd\/[a-z0-9]+(-[a-z0-9]+)*$/.test(pr.head.ref));
+              checks.push(['Código de producto solo en PRs `implementation` desde `sdd/<id>`', productOk, product.length ? `${product.length} fichero(s)` : 'no toca src/ ni tests/']);
+              if (!productOk) errors.push(`Cambia código o tests de producto (${product.slice(0, 5).join(', ')}${product.length > 5 ? '…' : ''}): requiere el label \`implementation\` y la rama \`sdd/<change-id>\`.`);
+
+              const production = files.filter((f) => /^src\//i.test(f.filename) && !/\/Migrations\//i.test(f.filename) && !/\.(Designer|g)\.cs$/i.test(f.filename));
+              const size = production.reduce((n, f) => n + f.additions + f.deletions, 0);
+              checks.push(['Tamaño (líneas de producción)', size <= 800, `${size} (aviso > 400, fallo > 800)`]);
+              if (size > 800) errors.push(`La PR cambia ${size} líneas de producción (> 800). Divide el change.`);
+              else if (size > 400) warnings.push(`La PR cambia ${size} líneas de producción (> 400): justifícalo en la descripción.`);
+            } catch (e) {
+              errors.push(`Error evaluando las reglas: ${e.message}`);
+            }
+
+            const esc = (s) => String(s).replace(/\|/g, '\\|').replace(/@/g, '@\u200b');
+            await core.summary
+              .addHeading('🛡️ PR guardrails', 2)
+              .addRaw(['| Regla | Estado | Detalle |', '|---|---|---|', ...checks.map(([r, ok, d]) => `| ${r} | ${ok ? '✅' : '❌'} | ${esc(d)} |`)].join('\n') + '\n\n')
+              .addRaw(warnings.map((w) => `> ⚠️ ${w}`).join('\n') + '\n')
+              .write();
+            warnings.forEach((w) => core.warning(w));
+            if (errors.length) {
+              await setStatus('failure', errors[0]);
+              core.setFailed(errors.join('\n'));
+            } else {
+              await setStatus('success', warnings.length ? `OK con ${warnings.length} aviso(s)` : 'Todas las reglas OK');
+            }
