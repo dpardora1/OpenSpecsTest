@@ -3,7 +3,7 @@ name: spec-architect
 description: Arquitecto de especificaciones. Crea y mantiene los artefactos OpenSpec de un change (proposal, specs delta, design, tasks) a partir de un Issue aprobado, y archiva changes completados.
 argument-hint: "#<issue> o <change-id> [propose|archive]"
 tools: ['read', 'search', 'edit', 'execute', 'todo']
-model: ['Claude Opus 5.5', 'GPT-6.1 Sol']
+model: ['Claude Sonnet 5.5', 'Claude Opus 5.5']
 user-invocable: false
 ---
 

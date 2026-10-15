@@ -3,7 +3,7 @@ name: implementer
 description: Implementa un change OpenSpec aprobado con TDD (tests desde los escenarios), mantiene el quality gate en verde y corrige los hallazgos de las revisiones.
 argument-hint: "<change-id> [fix: <hallazgos consolidados>]"
 tools: ['read', 'search', 'edit', 'execute', 'todo']
-model: ['Claude Opus 5.5', 'GPT-5.3-Codex']
+model: ['Claude Sonnet 5.5', 'Claude Opus 5.5']
 user-invocable: false
 ---
 

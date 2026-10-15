@@ -73,7 +73,8 @@ Specs, Issues, PRs y documentación: **español**. Código, identificadores, men
 | Validar specs | `openspec validate --all --strict` |
 | Quality gate (local = CI) | `./scripts/quality-gate.ps1` *(fase F5)* |
 | Trazabilidad escenario → test | `./scripts/traceability.ps1 -Change <id>` *(fase F5)* |
-| Revisión paralela por CLI (aislada, solo lectura) | `./scripts/parallel-review.ps1 -Change <id> -Iteration <n>` |
+| Revisión paralela (aislada, solo lectura; ejecuta la copia de `origin/main`) | ver skill `parallel-code-review` · `& $tool -Change <id> -Iteration <n>` |
+| Tests de los scripts del proceso | `Invoke-Pester ./tests/scripts` |
 | Mover tarjeta del tablero | `./scripts/sdd-board.ps1 -Issue <n> -Status dev` |
 
 ## 8. Definition of Done de un change

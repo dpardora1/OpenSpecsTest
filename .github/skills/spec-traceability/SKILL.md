@@ -35,6 +35,20 @@ $t = 'Reserva solapada rechazada'
 dotnet test --filter "Scenario=bookings/reserva-solapada-rechazada"   # ejecutar los tests de un escenario
 ```
 
+Hasta que exista `scripts/traceability.ps1` (F5), comprueba a mano que cada escenario del change tiene su trait:
+
+```powershell
+$slug = { param($t) ($t.Normalize('FormD') -replace '\p{Mn}', '').ToLowerInvariant() -replace '[^a-z0-9]+', '-' -replace '^-|-$', '' }
+Get-ChildItem openspec/changes/<id>/specs -Recurse -Filter spec.md | ForEach-Object {
+    $cap = $_.Directory.Name
+    Select-String -Path $_.FullName -Pattern '^#### Scenario:\s*(.+)$' | ForEach-Object {
+        $trait = "$cap/$(& $slug $_.Matches[0].Groups[1].Value.Trim())"
+        $found = Select-String -Path (Get-ChildItem tests -Recurse -Filter *.cs) -SimpleMatch "`"Scenario`", `"$trait`"" -Quiet
+        "{0,-60} {1}" -f $trait, $(if ($found) { '✅' } else { '❌ sin test' })
+    }
+}
+```
+
 ## Tabla para la PR
 
 | Escenario (spec) | Test | Resultado |

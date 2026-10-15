@@ -13,6 +13,7 @@ El gate es **el mismo en local y en CI**: si pasa en local, pasará en la PR.
 ```powershell
 ./scripts/quality-gate.ps1                  # gate completo (creado en la fase F5)
 ./scripts/quality-gate.ps1 -Change <id>     # incluye trazabilidad de los escenarios del change
+./scripts/quality-gate.ps1 -Change <id> *> .sdd/reviews/<id>/iter-<i>/quality-gate.txt   # evidencia para los revisores
 ```
 
 Mientras `scripts/quality-gate.ps1` no exista (antes de F5), ejecuta el equivalente:

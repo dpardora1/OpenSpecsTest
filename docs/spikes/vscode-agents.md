@@ -48,5 +48,5 @@ Ajustes confirmados: `github.copilot.chat.otel.enabled`, `exporterType` (`otlp-h
 
 1. Los revisores y trabajadores llevan `user-invocable: false`. El conductor lista sus `agents` explícitamente.
 2. Cada agente lleva `model` como lista priorizada (modelo preferido + fallback) para tolerar falta de disponibilidad.
-3. El `sdd-conductor` corre con un modelo de nivel alto (restricción de coste de subagentes).
+3. Restricción de nivel de coste: los subagentes no pueden superar al conductor. Con la decisión D-12 (todos los modelos preferidos 1x) no hay conflicto; el fallback Opus (15x) del conductor solo amplía el margen.
 4. Revisión paralela con dos caminos: subagentes de VS Code (experiencia interactiva) y `parallel-review.ps1` con Copilot CLI (determinista, también en CI).

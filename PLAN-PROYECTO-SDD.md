@@ -462,7 +462,7 @@ flowchart LR
 ```
 
 - **Durante el change** (antes de la PR): `retrospective` registra las lecciones nuevas, que viajan en la PR y se aprueban en el Gate 3.
-- **Tras tu revisión**: un workflow `on: pull_request_review` captura tus comentarios y cambios solicitados como `lesson-candidate`. El siguiente change los incorpora a `approver-preferences.md`.
+- **Tras tu revisión**: el workflow `lesson-candidate.yml` captura tus comentarios y cambios solicitados como Issues `lesson-candidate`. Se ejecuta cada hora y bajo demanda desde `main`, no con `pull_request_review`, para que una PR no pueda modificarlo. El siguiente change los incorpora a `approver-preferences.md`.
 - **Cada 3 changes**: consolidación. Las lecciones con ≥ 2 ocurrencias se promocionan, las obsoletas se podan y `lessons.md` se mantiene por debajo de ~150 líneas para no saturar el contexto. Todo ello en una PR pequeña `chore(process)`.
 - **Jerarquía de promoción**: lección → instrucción → skill → **validación determinista**. La mejor memoria es la que se convierte en un check que ya no depende del modelo.
 
@@ -656,7 +656,7 @@ El `po-analyst` generará estos Issues a partir de una única frase de visión; 
 - [ ] `*.instructions.md` por tipo de archivo (C#, tests, specs).
 - [ ] Los 10 custom agents de la sección 6.1 con sus herramientas mínimas.
 - [ ] Las 8 skills propias de la sección 6.4.
-- [ ] `.sdd/memory/lessons.md` y `approver-preferences.md` vacíos con su plantilla; workflow `on: pull_request_review` → `lesson-candidate`.
+- [x] `.sdd/memory/lessons.md` y `approver-preferences.md` con su plantilla; workflow `lesson-candidate.yml` (cada hora + bajo demanda desde `main`) → `lesson-candidate`.
 - [ ] Prompts `/sdd-new-requirement` y `/sdd-deliver`.
 - **Criterio de salida:** cada agente responde a una prueba en seco ("¿qué harías con el Issue X?") respetando su rol y citando la memoria.
 

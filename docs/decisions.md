@@ -18,26 +18,30 @@ Decisiones de la Fase F0 (F0-06 y F0-07). Cualquier cambio posterior se registra
 | D-10 | PR de spec y PR de código | Separadas (modo rápido solo para cambios triviales) |
 | D-11 | Identidad de los agentes | **GitHub App `sdd-agent-mapps`**: commits y PRs firmados como `sdd-agent-mapps[bot]`. GitHub no permite aprobar PRs propias, y así el humano hace una aprobación real y se puede medir "0 líneas escritas por el humano". Credenciales fuera del repo en `~/.sdd/`. La sesión cambia a esta identidad con `. ./scripts/agent-auth.ps1` |
 
-## Modelos por agente (F0-06) — aprobada el 2026-10-15
+## Modelos por agente — aprobada el 2026-10-15 (revisada en F4, D-12)
 
 Criterios:
-- Los 4 revisores usan **familias de modelo distintas** entre sí y respecto al implementer, para reducir puntos ciegos compartidos.
-- El conductor usa un modelo de nivel alto, porque un subagente no puede superar su nivel de coste.
-- Las tareas mecánicas usan modelos rápidos y baratos.
+- Los 4 revisores usan **modelos distintos** entre sí y respecto al implementer, para reducir puntos ciegos compartidos.
+- **Coste:** todos los modelos preferidos tienen multiplicador **1x** (medido con la telemetría, `github.copilot.cost` por llamada). Claude Opus 5.5 cuesta **15x** y queda solo como fallback.
+- En VS Code un subagente no puede superar el nivel de coste del conductor: si el conductor cae a su fallback (Opus), los subagentes pueden usar el suyo; al revés no.
 
 | Agente | Modelo preferido | Fallback | Motivo |
 |---|---|---|---|
-| `sdd-conductor` | `claude-opus-5.5` | `claude-sonnet-5.5` | Orquestación larga; nivel alto para habilitar subagentes |
-| `po-analyst` | `claude-sonnet-5.5` | `gpt-5.6-sol` | Redacción de historias y Gherkin |
-| `spec-architect` | `claude-opus-5.5` | `gpt-6.1-sol` | Diseño y especificación |
-| `implementer` | `claude-opus-5.5` | `gpt-5.3-codex` | Máxima calidad de código y TDD |
-| `reviewer-spec` | `gpt-6.1-sol` | `gpt-6-sol` | Familia distinta al implementer |
-| `reviewer-architecture` | `gemini-4-argon` | `gemini-3.8-flash` | Familia distinta |
-| `reviewer-security` | `grok-4.7` | `grok-4.6` | Familia distinta |
-| `reviewer-tests` | `claude-sonnet-5.5` | `gpt-5.6-sol` | Claude, pero distinto modelo que el implementer. *Fallback original `kimi-k3` sustituido: no está disponible en la cuenta (API de modelos, 2026-10-15)* |
-| `pr-author` | `claude-haiku-5.5` | `gpt-5.4-mini` | Tarea mecánica, bajo coste |
-| `retrospective` | `gpt-6.1-sol` | `claude-sonnet-5.5` | Análisis y síntesis; perspectiva distinta al implementer |
+| `sdd-conductor` | Claude Sonnet 5.5 | Claude Opus 5.5 | Orquestación larga con muchas llamadas: 1x |
+| `po-analyst` | Claude Sonnet 5.5 | GPT-5.6 Sol | Redacción de historias y Gherkin |
+| `spec-architect` | Claude Sonnet 5.5 | Claude Opus 5.5 | Diseño y especificación |
+| `implementer` | Claude Sonnet 5.5 | Claude Opus 5.5 | Código y TDD |
+| `reviewer-spec` | GPT-6.1 Sol | GPT-6 Sol | Familia distinta al implementer |
+| `reviewer-architecture` | Gemini 4 Argon | Gemini 3.8 Flash | Familia distinta |
+| `reviewer-security` | Grok 4.7 | Grok 4.6 | Familia distinta |
+| `reviewer-tests` | GPT-5.3-Codex | MAI-Code-1.1-Flash | Especializado en código y distinto del implementer (antes Claude Sonnet 5.5, que ahora usa el implementer) |
+| `pr-author` | Claude Haiku 5.5 | GPT-5.4 mini | Tarea mecánica |
+| `retrospective` | GPT-6.1 Sol | Claude Sonnet 5.5 | Análisis y síntesis; perspectiva distinta al implementer |
 
-> La disponibilidad real de cada modelo en la cuenta se comprueba en F4-12 (prueba en seco). Si alguno no está disponible, se usa el fallback y se registra aquí.
+> Disponibilidad verificada en F4-12 (prueba en seco de los 10 agentes con su modelo preferido) y con sondas de 1 llamada para GPT-5.3-Codex, MAI-Code-1.1-Flash, Claude Sonnet 5 y 5.5 (todas 1x). `kimi-k3`, el fallback original de `reviewer-tests`, no está disponible en la cuenta.
 
-**Formato en los agentes (F4):** el campo `model` de cada `.agent.md` es una **lista de nombres visibles** con fallback, p. ej. `model: ['Claude Opus 5.5', 'Claude Sonnet 5.5']`. VS Code prueba los modelos en orden; Copilot CLI acepta el mismo formato (verificado: nombre visible, lista, id y nombre cualificado resuelven al mismo modelo). `scripts/parallel-review.ps1` lee esa lista y reintenta con el siguiente modelo si el primero falla.
+**Formato en los agentes (F4):** el campo `model` de cada `.agent.md` es una **lista de nombres visibles** con fallback, p. ej. `model: ['Claude Sonnet 5.5', 'Claude Opus 5.5']`. VS Code prueba los modelos en orden y Copilot CLI acepta el mismo formato. El flag `--model` del CLI solo acepta ids, así que `scripts/parallel-review.ps1` convierte los nombres (lección L-004) y reintenta con el siguiente modelo si el primero falla.
+
+## D-12 · Coste de modelos (F4) — aprobada el 2026-10-15
+
+La prueba en seco mostró que Claude Opus 5.5 consume **15 créditos premium por llamada** frente a 1 del resto: 90 de los 104 créditos de la prueba. Decisión del aprobador: **Claude Sonnet 5.5 (1x)** en conductor, spec-architect e implementer, con Opus solo como fallback.
