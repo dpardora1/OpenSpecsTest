@@ -39,11 +39,11 @@ Lanza 4 procesos de Copilot CLI en paralelo (cada uno con el modelo de su agente
 
 Garantías del modo B:
 - **Aislado:** cada revisión corre en un *git worktree* temporal fuera de las carpetas de confianza, así que los hooks de la rama no se ejecutan y tu copia de trabajo no se toca.
-- **Solo lectura:** herramientas `view`, `glob` y `grep`; sin shell, sin tokens de GitHub y sin MCP integrados.
-- **Configuración y revisores de confianza:** `.sdd/sdd.config.json` y `reviewer-*.agent.md` se leen de `origin/main`. Si aún no existen allí (bootstrap), se usa la rama y el informe lo advierte (⚠️). El script se niega a ejecutarse si su copia difiere de la de `origin/main`.
+- **Solo lectura y confinado:** herramientas `view`, `glob` y `grep`; sin shell, sin tokens de GitHub, sin MCP integrados, sin instrucciones personalizadas (`--no-custom-instructions`) y sin acceso fuera del worktree (`--disallow-temp-dir` + verificación de rutas: `~/.sdd` queda fuera de alcance; verificado).
+- **Configuración, memoria y revisores de confianza:** `.sdd/sdd.config.json`, `.sdd/memory/`, las instrucciones del proyecto y `reviewer-*.agent.md` se leen de `origin/main`; el resto de instrucciones, skills, hooks y agentes de la rama se eliminan del worktree. Si aún no existen allí (bootstrap), se usa la rama y el informe lo advierte (⚠️). El script se niega a ejecutarse si su copia difiere de la de `origin/main`.
 - **Tests:** la lógica de validación y consolidación está cubierta por `tests/scripts/parallel-review.Tests.ps1` (Pester).
 
-**Modo A — subagentes (opcional, sesiones interactivas en VS Code):** solo si el change **no** toca `.github/`, `scripts/` ni `.sdd/`, porque los subagentes usan las definiciones del workspace.
+**Modo A — subagentes (opcional, sesiones interactivas en VS Code):** solo si el change **no** toca `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `.github/`, `.vscode/`, `.claude/`, `scripts/` ni `.sdd/` (lo mismo que el modo B elimina del worktree), porque los subagentes usan las definiciones, instrucciones y memoria del workspace.
 
 1. `& $tool -Change <id> -Iteration <i> -PrepareOnly` (evidencias en `.sdd/reviews/<id>/iter-<i>/`).
 2. En **una sola respuesta**, emite las 4 invocaciones de subagente con este prompt autocontenido:

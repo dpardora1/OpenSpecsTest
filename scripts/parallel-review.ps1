@@ -27,13 +27,12 @@
     reviews; see failedReviewers in the JSON) · 2 = no blocking findings but at least one review failed.
 
 .EXAMPLE
-    $tool = Join-Path ([IO.Path]::GetTempPath()) 'sdd-parallel-review.ps1'
-    git show origin/main:scripts/parallel-review.ps1 | Set-Content $tool -Encoding utf8
-    & $tool -Change add-create-booking -Iteration 1
+    # Always from the trusted copy of origin/main (AGENTS.md §3)
+    & "$env:SDD_TOOLS/scripts/parallel-review.ps1" -Change add-create-booking -Iteration 1
 
 .EXAMPLE
-    ./scripts/parallel-review.ps1 -Change add-create-booking -Iteration 1 -PrepareOnly     # evidence only (mode A)
-    ./scripts/parallel-review.ps1 -Change add-create-booking -Iteration 1 -ConsolidateOnly # re-consolidate saved reports
+    & "$env:SDD_TOOLS/scripts/parallel-review.ps1" -Change add-create-booking -Iteration 1 -PrepareOnly     # evidence only (mode A)
+    & "$env:SDD_TOOLS/scripts/parallel-review.ps1" -Change add-create-booking -Iteration 1 -ConsolidateOnly # re-consolidate saved reports
 #>
 [CmdletBinding()]
 param(
@@ -72,7 +71,7 @@ $unknown = @($Reviewers | Where-Object { $config.reviewers -notcontains $_ })
 if ($unknown) { throw "Unknown reviewer(s): $($unknown -join ', '). Allowed: $($config.reviewers -join ', ')" }
 
 $selfFromBase = git -C $root show "${Base}:scripts/parallel-review.ps1" 2>$null
-if ($ConsolidateOnly -or $PrepareOnly) { }   # no reviewer is launched: no tooling trust needed
+if ($ReportsDir) { }   # test mode (Pester): only reads and writes the given folder
 elseif ($LASTEXITCODE -eq 0 -and $selfFromBase -and $PSCommandPath) {
     $norm = { param($t) ($t -join "`n") -replace "`r", '' -replace '^\uFEFF', '' }
     if ((& $norm $selfFromBase).Trim() -ne (& $norm (Get-Content $PSCommandPath -Raw)).Trim()) {
@@ -255,10 +254,11 @@ else {
         # (F4 review, iteration 3). Project guidance from the base branch is restored as plain reference files and
         # the CLI also runs with --no-custom-instructions.
         foreach ($rel in 'AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.github/copilot-instructions.md', '.github/instructions', '.github/skills',
-            '.github/hooks', '.github/prompts', '.github/agents', '.github/copilot', '.claude', '.vscode') {
+            '.github/hooks', '.github/prompts', '.github/agents', '.github/copilot', '.claude', '.vscode', '.sdd') {
             Remove-Item (Join-Path $worktree $rel) -Recurse -Force -ErrorAction SilentlyContinue
         }
-        foreach ($rel in 'AGENTS.md', '.github/copilot-instructions.md', '.github/instructions') {
+        # Reviewers read project guidance, configuration and memory (lessons) only from the base branch.
+        foreach ($rel in 'AGENTS.md', '.github/copilot-instructions.md', '.github/instructions', '.sdd/memory', '.sdd/sdd.config.json') {
             git -C $worktree checkout $Base -- $rel 2>$null
         }
         New-Item -ItemType Directory -Force (Join-Path $worktree '.github/agents') | Out-Null
@@ -291,7 +291,7 @@ else {
                 $output = ''
                 foreach ($model in $models) {
                     $start = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-                    $cliArgs = @('-p', $prompt, '--agent', $reviewer, '--no-ask-user', '-s', '--disable-builtin-mcps', '--no-custom-instructions',
+                    $cliArgs = @('-p', $prompt, '--agent', $reviewer, '--no-ask-user', '-s', '--disable-builtin-mcps', '--no-custom-instructions', '--disallow-temp-dir',
                         '--available-tools', 'view', 'glob', 'grep',
                         '--secret-env-vars', 'GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN')
                     if ($model) { $cliArgs += @('--model', $model) }

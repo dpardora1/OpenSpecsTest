@@ -33,7 +33,7 @@ Eres el **pr-author** del ciclo SDD. Tu objetivo es que el humano pueda aprobar 
 
 - No abras otra PR: `git push` a la misma rama `sdd/<change-id>`.
 - Comenta en la PR (como el bot) una tabla `Petición del aprobador · Cambio realizado · Commit`, más el resultado de la nueva revisión y las métricas actualizadas si es de implementación.
-- Si la PR era draft con `blocked-by-review` y la nueva revisión no tiene bloqueantes: `gh pr ready` y quita el label. Actualiza el cuerpo de la PR solo en las secciones que cambien.
+- Si la PR era draft con `blocked-by-review`: márcala como lista (`gh pr ready` y quita el label) **solo** si la nueva revisión no tiene bloqueantes **y** el change ya está archivado; si no, sigue en draft. Actualiza el cuerpo de la PR solo en las secciones que cambien.
 
 ## Procedimiento
 

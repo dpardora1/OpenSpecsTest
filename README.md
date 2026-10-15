@@ -15,5 +15,5 @@ Demo de **Spec-Driven Development** con [OpenSpec](https://github.com/Fission-AI
 - Reglas para agentes: [AGENTS.md](./AGENTS.md) · agentes en [`.github/agents/`](./.github/agents) · skills en [`.github/skills/`](./.github/skills) · memoria en [`.sdd/memory/`](./.sdd/memory).
 - Comandos en Copilot Chat: `/sdd-new-requirement <idea>` (Issues para el Gate 1) · `/sdd-deliver #<issue>` (ciclo completo hasta el siguiente gate) · `/sdd-consolidate` (memoria, cada 3 changes) · `/opsx-*` (OpenSpec).
 - Los agentes firman commits y PRs como **`sdd-agent-mapps[bot]`** (GitHub App). El humano solo aprueba.
-- Para actuar como el bot en una sesión local: `. ./scripts/agent-auth.ps1` (requiere `~/.sdd/sdd-agent.json` y `sdd-agent.pem`, creados con `node scripts/bootstrap/create-agent-app.mjs`).
+- Para actuar como el bot en una sesión local: `. "$env:SDD_TOOLS/scripts/agent-auth.ps1"`, siempre desde la copia de confianza de `origin/main` descrita en [AGENTS.md §3](./AGENTS.md) (requiere `~/.sdd/sdd-agent.json` y `sdd-agent.pem`, creados con `node scripts/bootstrap/create-agent-app.mjs`).
 - `main` está protegida: solo se modifica mediante PR con aprobación del code owner.
