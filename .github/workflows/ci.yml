@@ -6,8 +6,8 @@
 # weaken the control it is judged by. PRs labeled `process` that change scripts/ also run their own version, so
 # changes to the gate are validated too. Changes to this file require the `process` label (pr-guardrails, L-005).
 #
-# Parameters by PR type (label): implementation -> -Change <id from branch sdd/<id>> (traceability required);
-# spec / process / dependencies -> no -Change (OpenSpec validation still runs).
+# Parameters: every non-spec PR from a branch sdd/<id> -> -Change <id> (traceability required). Spec PRs (restricted
+# by pr-guardrails to openspec/ and docs/adr/) and other branches -> no -Change (OpenSpec validation still runs).
 name: CI
 
 on:
@@ -46,8 +46,11 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install OpenSpec CLI (pinned)
-        run: npm install -g @fission-ai/openspec@1.14.2
+      - name: Install OpenSpec CLI (pinned, outside the checkout)
+        # Run from RUNNER_TEMP with an explicit registry and no lifecycle scripts: a .npmrc in the PR cannot
+        # redirect the registry or replace the CLI and the 'yaml' module used by the trusted gate.
+        working-directory: ${{ runner.temp }}
+        run: npm install -g @fission-ai/openspec@1.14.2 --registry https://registry.npmjs.org/ --ignore-scripts
 
       - name: Install Pester 5
         shell: pwsh
@@ -67,8 +70,11 @@ jobs:
           $gateArgs = @{ Base = 'origin/main'; ResultsDir = "$env:RUNNER_TEMP/quality-gate" }
           New-Item -ItemType Directory -Force $gateArgs.ResultsDir | Out-Null
 
-          if ($env:EVENT_NAME -eq 'pull_request' -and $labels -contains 'implementation') {
-            if ($env:HEAD_REF -notmatch '^sdd/([a-z0-9]+(-[a-z0-9]+)*)$') { throw "Implementation PRs must come from a branch named sdd/<change-id> (got '$env:HEAD_REF')." }
+          if ($env:EVENT_NAME -eq 'pull_request' -and $labels -contains 'implementation' -and $env:HEAD_REF -notmatch '^sdd/[a-z0-9]+(-[a-z0-9]+)*$') {
+            throw "Implementation PRs must come from a branch named sdd/<change-id> (got '$env:HEAD_REF')."
+          }
+          # Any PR from sdd/<id> except spec PRs (which guardrails restrict to openspec/ and docs/adr/) must trace its scenarios.
+          if ($env:EVENT_NAME -eq 'pull_request' -and $labels -notcontains 'spec' -and $env:HEAD_REF -match '^sdd/([a-z0-9]+(-[a-z0-9]+)*)$') {
             $gateArgs.Change = $Matches[1]
           }
 

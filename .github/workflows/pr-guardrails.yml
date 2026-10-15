@@ -6,10 +6,11 @@
 # ruleset), because check runs of pull_request_target are attached to the base branch.
 #   - Title: Conventional Commits (it becomes the squash commit message)
 #   - Exactly one type label: spec | implementation | process | dependencies
-#   - L-005: changes to agents, skills, prompts, instructions, hooks, workflows, AGENTS.md, scripts/ or the SDD config
-#     require the `process` label. Exception: Dependabot PRs labeled `dependencies` whose workflow changes only touch
-#     `uses:` lines pinned by SHA.
+#   - L-005: changes to agents, skills, prompts, instructions, hooks, workflows, AGENTS.md, scripts/, tests/scripts/,
+#     the SDD config, .npmrc or nuget.config require the `process` label. Exception: Dependabot PRs labeled
+#     `dependencies` whose workflow changes only touch `uses:` lines pinned by SHA.
 #   - `spec` PRs only touch openspec/changes/ and docs/adr/
+#   - Product code or tests (src/, tests/ except tests/scripts/) only in `implementation` PRs from sdd/<change-id>
 #   - Size: production lines (src/**, excluding migrations and generated code) warn > 400, fail > 800
 name: PR guardrails
 
@@ -61,7 +62,7 @@ jobs:
               const files = await github.paginate(github.rest.pulls.listFiles, { owner, repo, pull_number: pr.number, per_page: 100 });
               const names = files.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean));
 
-              const processPath = /^(AGENTS\.md|\.github\/(agents|skills|prompts|instructions|hooks|workflows)\/|\.github\/copilot-instructions\.md$|scripts\/|\.sdd\/sdd\.config\.json$)/;
+              const processPath = /^(AGENTS\.md|\.github\/(agents|skills|prompts|instructions|hooks|workflows)\/|\.github\/copilot-instructions\.md$|scripts\/|tests\/scripts\/|\.sdd\/sdd\.config\.json$|(.*\/)?\.npmrc$|(.*\/)?nuget\.config$)/i;
               const touched = files.filter((f) => processPath.test(f.filename) || (f.previous_filename && processPath.test(f.previous_filename)));
               // Dependabot exception: only workflow files, and only `uses:` lines pinned by SHA (plus version comments) change.
               const usesOnly = (f) => f.filename.startsWith('.github/workflows/') && f.status === 'modified' && typeof f.patch === 'string' &&
@@ -77,6 +78,13 @@ jobs:
                 checks.push(['PR de spec solo con artefactos de spec', outside.length === 0, outside.length ? `${outside.length} fichero(s) fuera` : 'OK']);
                 if (outside.length) errors.push(`Una PR de spec solo puede tocar openspec/changes/ y docs/adr/: ${outside.slice(0, 10).join(', ')}`);
               }
+
+              // Product code and product tests only arrive through the SDD cycle: label `implementation` from sdd/<change-id>,
+              // so CI traces the change's scenarios (it passes -Change for every non-spec PR from sdd/<id>).
+              const product = names.filter((n) => /^src\//.test(n) || (/^tests\//.test(n) && !/^tests\/scripts\//.test(n)));
+              const productOk = product.length === 0 || (labels.includes('implementation') && /^sdd\/[a-z0-9]+(-[a-z0-9]+)*$/.test(pr.head.ref));
+              checks.push(['Código de producto solo en PRs `implementation` desde `sdd/<id>`', productOk, product.length ? `${product.length} fichero(s)` : 'no toca src/ ni tests/']);
+              if (!productOk) errors.push(`Cambia código o tests de producto (${product.slice(0, 5).join(', ')}${product.length > 5 ? '…' : ''}): requiere el label \`implementation\` y la rama \`sdd/<change-id>\`.`);
 
               const production = files.filter((f) => /^src\//.test(f.filename) && !/\/Migrations\//.test(f.filename) && !/\.(Designer|g)\.cs$/.test(f.filename));
               const size = production.reduce((n, f) => n + f.additions + f.deletions, 0);

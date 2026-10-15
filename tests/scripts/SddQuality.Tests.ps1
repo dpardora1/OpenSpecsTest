@@ -175,12 +175,16 @@ Describe 'Get-ChangedFilesCoverage' {
 Describe 'Test-CSharpHasExecutableCode' {
     It 'is false for declaration-only files and true when there is something to execute' -TestCases @(
         @{ name = 'interface'; code = "namespace A;`npublic interface IRepo`n{`n    Task<int> CountAsync(CancellationToken ct);`n}"; expected = $false }
-        @{ name = 'enum'; code = "namespace A;`npublic enum Sport { Padel, Tennis }"; expected = $false }
+        @{ name = 'enum'; code = "namespace A;`n[Flags]`npublic enum Sport { Padel = 1, Tennis = 2 }"; expected = $false }
         @{ name = 'positional record'; code = "namespace A;`npublic sealed record CourtDto(Guid Id, string Name);"; expected = $false }
+        @{ name = 'record with body'; code = "public record R(int A) { public int B => A * 2; }"; expected = $true }
         @{ name = 'method body'; code = "public class C`n{`n    public int Add(int a, int b)`n    {`n        return a + b;`n    }`n}"; expected = $true }
         @{ name = 'expression body'; code = 'public class C { public int Two() => 2; }'; expected = $true }
         @{ name = 'property accessor'; code = 'public class C { private int x; public int X { get { return x; } } }'; expected = $true }
+        @{ name = 'property initializer'; code = 'public class C { public int Value { get; } = 42; }'; expected = $true }
+        @{ name = 'top-level statements'; code = "var builder = WebApplication.CreateBuilder(args);`nbuilder.Build().Run();"; expected = $true }
         @{ name = 'commented code only'; code = "public interface I { }`n// public int Add(int a, int b) => a + b;"; expected = $false }
+        @{ name = 'keyword inside a string'; code = "public interface I { [Obsolete(`"use new API`")] void M(); }"; expected = $false }
     ) {
         param($name, $code, $expected)
         $path = Join-Path $TestDrive "$($name -replace '\s', '-').cs"

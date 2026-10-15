@@ -96,13 +96,20 @@ function Get-TraceabilityReport {
 
 function Test-CSharpHasExecutableCode {
     <#
-    Heuristic for changed files that do not appear in any coverage report: declarations-only files (interfaces, enums,
-    records/classes without bodies) have nothing to execute; anything with a method/accessor/lambda body does.
+    For changed files that appear in no coverage report. A file is "declarations only" (nothing to execute) ONLY when it
+    verifiably contains just interfaces, enums, delegates or positional records without bodies; anything else, including
+    unknown shapes such as classes with property initializers or top-level statements, counts as executable (L-007).
     #>
     param([Parameter(Mandatory)][string]$Path)
-    if (-not (Test-Path $Path)) { return $false }
-    $code = (Get-Content $Path -Raw) -replace '(?s)/\*.*?\*/', '' -replace '//[^\r\n]*', ''
-    $code -match '\)\s*(\{|=>)' -or $code -match '\b(get|set|init|add|remove)\s*(\{|=>)' -or $code -match '=>\s*[^;]'
+    if (-not (Test-Path $Path)) { return $true }
+    $code = (Get-Content $Path -Raw) -replace '(?s)/\*.*?\*/', '' -replace '//[^\r\n]*', '' -replace '@?"(?:[^"\\]|\\.)*"', '""'
+    $code = $code -replace '\brecord\s+(class|struct)\b', 'record'
+    if ($code -notmatch '\b(interface|enum|delegate|record)\b') { return $true }
+    if ($code -match '\b(class|struct)\b') { return $true }
+    if ($code -match '\brecord\s+\w+(\s*<[^>]*>)?\s*(\([^)]*\))?[^;{]*\{') { return $true }
+    if ($code -match '\)\s*(\{|=>)' -or $code -match '\b(get|set|init|add|remove)\s*(\{|=>)' -or $code -match '=>') { return $true }
+    if ($code -match '\b(var|await|return|new|throw|if|for|foreach|while|switch|using\s*\()\b') { return $true }
+    $false
 }
 
 function Get-ChangedFilesCoverage {
