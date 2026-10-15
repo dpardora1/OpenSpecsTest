@@ -96,20 +96,27 @@ function Get-TraceabilityReport {
 
 function Test-CSharpHasExecutableCode {
     <#
-    For changed files that appear in no coverage report. A file is "declarations only" (nothing to execute) ONLY when it
-    verifiably contains just interfaces, enums, delegates or positional records without bodies; anything else, including
-    unknown shapes such as classes with property initializers or top-level statements, counts as executable (L-007).
+    For changed files that appear in no coverage report. A file is "declarations only" (nothing to execute) ONLY when its
+    WHOLE content is recognized as using directives, namespaces, attributes, interfaces/enums without bodies, delegates
+    and positional records; any remaining content (statements, classes, initializers, unknown shapes) counts as
+    executable (L-007).
     #>
     param([Parameter(Mandatory)][string]$Path)
     if (-not (Test-Path $Path)) { return $true }
     $code = (Get-Content $Path -Raw) -replace '(?s)/\*.*?\*/', '' -replace '//[^\r\n]*', '' -replace '@?"(?:[^"\\]|\\.)*"', '""'
-    $code = $code -replace '\brecord\s+(class|struct)\b', 'record'
-    if ($code -notmatch '\b(interface|enum|delegate|record)\b') { return $true }
-    if ($code -match '\b(class|struct)\b') { return $true }
-    if ($code -match '\brecord\s+\w+(\s*<[^>]*>)?\s*(\([^)]*\))?[^;{]*\{') { return $true }
+    # Any member body (methods, accessors, lambdas, default interface methods) is executable.
     if ($code -match '\)\s*(\{|=>)' -or $code -match '\b(get|set|init|add|remove)\s*(\{|=>)' -or $code -match '=>') { return $true }
-    if ($code -match '\b(var|await|return|new|throw|if|for|foreach|while|switch|using\s*\()\b') { return $true }
-    $false
+    $braces = '\{(?>[^{}]+|\{(?<d>)|\}(?<-d>))*(?(d)(?!))\}'
+    $modifiers = '(?:(?:public|internal|private|protected|partial|file|sealed|readonly)\s+)*'
+    $rest = $code
+    $rest = $rest -replace '\[[^\[\]]*(\[[^\[\]]*\][^\[\]]*)*\]', ' '                                   # attributes
+    $rest = $rest -replace '(?m)^\s*(global\s+)?using\s+[^;()]+;', ' '                                   # using directives
+    $rest = $rest -replace "$modifiers(interface|enum)\s+\w+(\s*<[^>]*>)?(\s*:\s*[^{]+)?\s*$braces", ' '  # interfaces / enums
+    $rest = $rest -replace "${modifiers}record(\s+(class|struct))?\s+\w+(\s*<[^>]*>)?\s*\([^)]*\)(\s*:\s*[^;{]+)?\s*;", ' '  # positional records
+    $rest = $rest -replace "${modifiers}delegate\s+[^;{]+;", ' '                                          # delegates
+    $rest = $rest -replace '(?m)^\s*namespace\s+[\w.]+\s*;', ' '                                         # file-scoped namespace
+    while ($rest -match 'namespace\s+[\w.]+\s*\{\s*\}') { $rest = $rest -replace 'namespace\s+[\w.]+\s*\{\s*\}', ' ' }  # emptied block namespaces
+    $rest.Trim().Length -gt 0
 }
 
 function Get-ChangedFilesCoverage {

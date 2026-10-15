@@ -81,12 +81,12 @@ jobs:
 
               // Product code and product tests only arrive through the SDD cycle: label `implementation` from sdd/<change-id>,
               // so CI traces the change's scenarios (it passes -Change for every non-spec PR from sdd/<id>).
-              const product = names.filter((n) => /^src\//.test(n) || (/^tests\//.test(n) && !/^tests\/scripts\//.test(n)));
+              const product = names.filter((n) => /^src\//i.test(n) || (/^tests\//i.test(n) && !/^tests\/scripts\//i.test(n)));
               const productOk = product.length === 0 || (labels.includes('implementation') && /^sdd\/[a-z0-9]+(-[a-z0-9]+)*$/.test(pr.head.ref));
               checks.push(['Código de producto solo en PRs `implementation` desde `sdd/<id>`', productOk, product.length ? `${product.length} fichero(s)` : 'no toca src/ ni tests/']);
               if (!productOk) errors.push(`Cambia código o tests de producto (${product.slice(0, 5).join(', ')}${product.length > 5 ? '…' : ''}): requiere el label \`implementation\` y la rama \`sdd/<change-id>\`.`);
 
-              const production = files.filter((f) => /^src\//.test(f.filename) && !/\/Migrations\//.test(f.filename) && !/\.(Designer|g)\.cs$/.test(f.filename));
+              const production = files.filter((f) => /^src\//i.test(f.filename) && !/\/Migrations\//i.test(f.filename) && !/\.(Designer|g)\.cs$/i.test(f.filename));
               const size = production.reduce((n, f) => n + f.additions + f.deletions, 0);
               checks.push(['Tamaño (líneas de producción)', size <= 800, `${size} (aviso > 400, fallo > 800)`]);
               if (size > 800) errors.push(`La PR cambia ${size} líneas de producción (> 800). Divide el change.`);

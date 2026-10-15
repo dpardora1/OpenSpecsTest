@@ -136,7 +136,7 @@ Invoke-Step 'dotnet' {
 # 5 ---------------------------------------------------------------------------------------------------
 Invoke-Step 'coverage' {
     if (-not $dotnetRan) { return @{ status = 'SKIP'; detail = 'requires the dotnet step' } }
-    $changed = @(git diff --name-only --diff-filter=AMR "$Base...$headSha" -- 'src/*.cs' 'src/**/*.cs' 2>$null | Where-Object { $_ -notmatch '/Migrations/|\.Designer\.cs$|\.g\.cs$' })
+    $changed = @(git diff --name-only --diff-filter=AMR "$Base...$headSha" -- ':(icase)src/*.cs' ':(icase)src/**/*.cs' 2>$null | Where-Object { $_ -notmatch '/Migrations/|\.Designer\.cs$|\.g\.cs$' })
     if ($changed.Count -eq 0) { return @{ status = 'SKIP'; detail = "no C# source changes against $Base" } }
     $reports = @(Get-ChildItem $testResults -Recurse -Filter *.cobertura.xml -ErrorAction SilentlyContinue | ForEach-Object FullName)
     if (-not $reports) { return @{ status = 'FAIL'; detail = 'no Cobertura report produced (Microsoft.Testing.Extensions.CodeCoverage missing?)' } }
@@ -199,15 +199,20 @@ $c = New-PesterConfiguration
 $c.Run.Path = $Path; $c.Run.PassThru = $true; $c.Output.Verbosity = 'None'
 $c.TestResult.Enabled = $true; $c.TestResult.OutputPath = $Out
 $r = Invoke-Pester -Configuration $c
-'SDD-PESTER-RESULT ' + ([pscustomobject]@{ passed = $r.PassedCount; failed = $r.FailedCount; total = $r.TotalCount; failures = @($r.Failed | ForEach-Object { "$($_.ExpandedPath): $($_.ErrorRecord.Exception.Message)" }) } | ConvertTo-Json -Compress)
+'SDD-PESTER-RESULT ' + ([pscustomobject]@{
+        result = "$($r.Result)"; passed = $r.PassedCount; failed = $r.FailedCount; total = $r.TotalCount
+        failedContainers = $r.FailedContainersCount; failedBlocks = $r.FailedBlocksCount
+        failures = @(@($r.Failed | ForEach-Object { "$($_.ExpandedPath): $($_.ErrorRecord.Exception.Message)" }) + @($r.Containers | Where-Object Result -eq 'Failed' | ForEach-Object { "container $($_.Item): $($_.ErrorRecord.Exception.Message)" }))
+    } | ConvertTo-Json -Compress)
 '@ | Set-Content $runner -Encoding utf8
     $out = Invoke-WithoutCredentials { pwsh -NoProfile -File $runner -Path (Join-Path $root 'tests/scripts') -Out (Join-Path $ResultsDir 'pester.xml') 2>&1 | Out-String }
     $line = ($out -split "`r?`n" | Where-Object { $_ -like 'SDD-PESTER-RESULT *' } | Select-Object -Last 1)
     if (-not $line) { $details.Add("#### ❌ pester`n`n``````text`n$(($out -split "`r?`n" | Select-Object -Last 25) -join "`n")`n``````"); return @{ status = 'FAIL'; detail = 'Pester did not report results (see details)' } }
     $r = $line.Substring('SDD-PESTER-RESULT '.Length) | ConvertFrom-Json
-    if ($r.failed -gt 0) {
-        $details.Add("#### ❌ pester`n`n" + (($r.failures | ForEach-Object { "- $_" }) -join "`n"))
-        @{ status = 'FAIL'; detail = "$($r.failed)/$($r.total) failed" }
+    # L-007: discovery/container errors, failed blocks or a run without tests are failures, never a pass.
+    if ($r.result -ne 'Passed' -or $r.failed -gt 0 -or $r.failedContainers -gt 0 -or $r.failedBlocks -gt 0 -or $r.total -eq 0) {
+        $details.Add("#### ❌ pester`n`n" + ((@($r.failures) + @("result=$($r.result) failed=$($r.failed) failedContainers=$($r.failedContainers) failedBlocks=$($r.failedBlocks) total=$($r.total)") | ForEach-Object { "- $_" }) -join "`n"))
+        @{ status = 'FAIL'; detail = "result $($r.result): $($r.failed) failed test(s), $($r.failedContainers) failed container(s), $($r.failedBlocks) failed block(s), $($r.total) test(s)" }
     }
     else { @{ status = 'PASS'; detail = "$($r.passed)/$($r.total) passed" } }
 }

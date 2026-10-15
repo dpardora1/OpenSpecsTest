@@ -185,11 +185,29 @@ Describe 'Test-CSharpHasExecutableCode' {
         @{ name = 'top-level statements'; code = "var builder = WebApplication.CreateBuilder(args);`nbuilder.Build().Run();"; expected = $true }
         @{ name = 'commented code only'; code = "public interface I { }`n// public int Add(int a, int b) => a + b;"; expected = $false }
         @{ name = 'keyword inside a string'; code = "public interface I { [Obsolete(`"use new API`")] void M(); }"; expected = $false }
+        @{ name = 'statement next to an interface'; code = 'System.Console.WriteLine(1); public interface IMarker { }'; expected = $true }
+        @{ name = 'block namespace with interface and usings'; code = "using System;`nnamespace A.B`n{`n    public interface I<T> : IDisposable where T : class`n    {`n        T Get(int id);`n    }`n}"; expected = $false }
+        @{ name = 'record class positional'; code = "namespace A;`npublic sealed record class Dto(int Id) : IEquatable<Dto>;"; expected = $false }
+        @{ name = 'delegate'; code = "namespace A;`npublic delegate void Handler(object sender, EventArgs e);"; expected = $false }
     ) {
         param($name, $code, $expected)
         $path = Join-Path $TestDrive "$($name -replace '\s', '-').cs"
         $code | Set-Content $path -Encoding utf8
         Test-CSharpHasExecutableCode $path | Should -Be $expected
+    }
+}
+
+Describe 'quality-gate.ps1 · pester step' {
+    It 'fails when a test file throws during discovery (never a silent "0 tests passed")' {
+        $repo = Join-Path $TestDrive 'gate-repo'
+        New-Item -ItemType Directory -Force "$repo/tests/scripts" | Out-Null
+        'throw "boom during discovery"' | Set-Content "$repo/tests/scripts/Broken.Tests.ps1" -Encoding utf8
+        git -C $repo init -q 2>$null
+        $gate = Join-Path $PSScriptRoot '../../scripts/quality-gate.ps1'
+        Push-Location $repo
+        try { $out = & pwsh -NoProfile -File $gate -Steps pester 2>&1 | Out-String } finally { Pop-Location }
+        $LASTEXITCODE | Should -Be 1
+        $out | Should -Match 'failed container'
     }
 }
 
