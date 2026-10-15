@@ -1,0 +1,52 @@
+schema: spec-driven
+
+context: |
+  Language: Spanish
+  All artifacts must be written in Spanish.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+
+  Proyecto: portal de reservas de pistas deportivas (pádel, tenis, fútbol sala…). Demo de
+  Spec-Driven Development donde los agentes hacen todo el trabajo y un humano solo aprueba
+  en tres gates: requisito (Issue), spec (PR de spec) e implementación (PR de código).
+
+  Stack: .NET 10 (LTS), C# 14, .NET Aspire (AppHost + ServiceDefaults), ASP.NET Core Minimal APIs
+  con TypedResults y endpoint groups, Vertical Slice Architecture (src/CourtBooking.Api/Features/<Capacidad>/<Caso>/)
+  + proyecto Domain con reglas de negocio, EF Core 10 + PostgreSQL, Blazor Web App (render interactivo Server),
+  ProblemDetails (RFC 9457) para errores, TimeProvider para el tiempo (nunca DateTime.Now).
+  Tests: xUnit v3 + Microsoft.Testing.Platform, Aspire.Hosting.Testing / Testcontainers para integración,
+  Playwright para E2E, ArchUnitNET/NetArchTest para arquitectura, Shouldly para aserciones.
+
+  Convenciones: código, identificadores y commits en inglés (Conventional Commits); specs, Issues y PRs en español.
+  Cada escenario de una spec se traza a tests con [Trait("Scenario", "<capability>/<escenario>")].
+  Capacidades actuales: platform, courts, availability, identity, bookings.
+  Reglas globales para agentes en AGENTS.md; lecciones aprendidas en .sdd/memory/lessons.md (consultarlas siempre).
+
+githubCopilot:
+  cloudAgent: true
+
+rules:
+  proposal:
+    - "Enlaza siempre el Issue de GitHub de origen (Closes #n) y el change ID."
+    - El cambio debe poder implementarse en una PR de menos de ~400 líneas de código de producción; si no, propón dividirlo.
+    - Incluye una sección explícita "Fuera de alcance".
+  specs:
+    - Cada requisito tiene al menos un escenario feliz y uno de error.
+    - Los escenarios usan WHEN/THEN con datos concretos (fechas, horas, importes), no descripciones vagas.
+    - Especifica códigos HTTP y formato ProblemDetails en los escenarios de error de la API.
+  design:
+    - Indica los vertical slices afectados, endpoints (método + ruta), cambios de esquema/migraciones y alternativas descartadas.
+    - Señala cualquier cambio de contrato de API (breaking o no).
+  tasks:
+    - "Ordena las tareas así: primero tests derivados de los escenarios (TDD), después implementación y al final documentación."
+    - Cada tarea debe ser verificable y pequeña (máx. ~1 hora de trabajo de agente).
+    - Incluye siempre una tarea final "Ejecutar scripts/quality-gate.ps1 en verde".
+
+operations:
+  apply:
+    guidance:
+      - "Sigue TDD: escribe el test del escenario, comprueba que falla y después implementa."
+      - "Implementa solo lo especificado: cualquier desviación requiere volver a la spec (Gate 2)."
+      - No marques una tarea como completada hasta que su test pase y el build no tenga warnings.
+  archive:
+    guidance:
+      - Antes de archivar, ejecuta openspec validate --strict y resume qué requisitos se añadieron o modificaron.
