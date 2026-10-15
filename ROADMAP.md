@@ -150,6 +150,7 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 | F1-07 | Issue Form `user-story.yml` (historia, Gherkin, prioridad, tamaño, DoR) | 🤖 | Plantilla | F1-01 | Issue de prueba válido |
 | F1-08 | `pull_request_template.md` (qué/por qué, escenarios, evidencias, revisiones, 🧠, 📈) | 🤖 | Plantilla | F1-01 | Renderiza en PR de prueba |
 | F1-09 | PR de prueba para validar protecciones | 🤖 | PR cerrada | F1-03 | No se puede mergear sin checks/aprobación |
+| F1-10 | Identidad de agentes: GitHub App + `scripts/agent-auth.ps1` (tokens de 1 h, autoría `[bot]`) | 🤖 + 👤 (crear/instalar App) | App instalada | F1-01 | Commits y PRs aparecen como `sdd-agent-mapps[bot]` |
 | ⛩️ | **Aprobar PR #1** | 👤 | — | F1-01..09 | — |
 
 ### F2 · OpenSpec — mar 20-oct (mañana) → **PR #2** 🔀 con F3

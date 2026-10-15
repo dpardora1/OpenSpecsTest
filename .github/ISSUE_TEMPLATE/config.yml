@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Plan del proyecto y metodología SDD
+    url: https://github.com/dpardora1/OpenSpecsTest/blob/main/PLAN-PROYECTO-SDD.md
+    about: Cómo funciona el ciclo de vida potenciado por agentes.

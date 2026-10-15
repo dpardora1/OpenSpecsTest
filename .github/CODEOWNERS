@@ -1,0 +1,3 @@
+# The human approver owns everything. Agents (sdd-agent-dpardora1[bot]) author changes;
+# approval is always required from a code owner before merging to main.
+* @dpardora1

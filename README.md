@@ -7,4 +7,10 @@ Demo de **Spec-Driven Development** con [OpenSpec](https://github.com/Fission-AI
 - ✅ [Registro de decisiones](./docs/decisions.md)
 - 🔬 Spikes: [VS Code agents](./docs/spikes/vscode-agents.md) · [Copilot CLI](./docs/spikes/copilot-cli.md)
 
-> Estado: **Fase F0 — Prerrequisitos** (en curso).
+> Estado: **Fase F1 — Repositorio y gobierno** (PR #1 en revisión).
+
+## Cómo trabajan los agentes en este repo
+
+- Los agentes firman commits y PRs como **`sdd-agent-mapps[bot]`** (GitHub App). El humano solo aprueba.
+- Para actuar como el bot en una sesión local: `. ./scripts/agent-auth.ps1` (requiere `~/.sdd/sdd-agent.json` y `sdd-agent.pem`, creados con `node scripts/bootstrap/create-agent-app.mjs`).
+- `main` está protegida: solo se modifica mediante PR con aprobación del code owner.
