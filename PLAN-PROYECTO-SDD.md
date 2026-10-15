@@ -180,7 +180,7 @@ CourtBooking/
 │   ├── compose.yaml                       # OTel Collector + Grafana LGTM (+ OpenMemory opcional)
 │   ├── otel-collector.yaml                # Fan-out: Grafana LGTM + fichero JSONL
 │   └── dashboards/sdd-process.json        # Dashboard Grafana del ciclo SDD
-├── .vscode/settings.json                  # Ajustes OTel de Copilot Chat + MCP de memoria
+├── scripts/bootstrap/enable-agent-telemetry.ps1  # Ajustes OTel de usuario (VS Code) + carpeta de confianza del CLI
 ├── openspec/
 │   ├── config.yaml                        # Contexto del proyecto + reglas por artefacto
 │   ├── specs/                             # Fuente de verdad (capacidades vigentes)
@@ -462,7 +462,7 @@ flowchart LR
 ```
 
 - **Durante el change** (antes de la PR): `retrospective` registra las lecciones nuevas, que viajan en la PR y se aprueban en el Gate 3.
-- **Tras tu revisión**: un workflow `on: pull_request_review` captura tus comentarios y cambios solicitados como `lesson-candidate`. El siguiente change los incorpora a `approver-preferences.md`.
+- **Tras tu revisión**: el workflow `lesson-candidate.yml` captura tus comentarios y cambios solicitados como Issues `lesson-candidate`. Se ejecuta cada hora y bajo demanda desde `main`, no con `pull_request_review`, para que una PR no pueda modificarlo. El siguiente change los incorpora a `approver-preferences.md`.
 - **Cada 3 changes**: consolidación. Las lecciones con ≥ 2 ocurrencias se promocionan, las obsoletas se podan y `lessons.md` se mantiene por debajo de ~150 líneas para no saturar el contexto. Todo ello en una PR pequeña `chore(process)`.
 - **Jerarquía de promoción**: lección → instrucción → skill → **validación determinista**. La mejor memoria es la que se convierte en un check que ya no depende del modelo.
 
@@ -551,7 +551,7 @@ flowchart LR
 
 ### 9.4 Configuración
 
-`.vscode/settings.json` (o ajustes de usuario si algún ajuste no admite ámbito de workspace):
+**Ajustes de usuario** de VS Code (son de ámbito *application*, así que VS Code los ignora en `.vscode/settings.json`). Se aplican con `./scripts/bootstrap/enable-agent-telemetry.ps1`, que también añade el repo a las carpetas de confianza de Copilot CLI para que se ejecuten los hooks:
 
 ```jsonc
 {
@@ -646,7 +646,7 @@ El `po-analyst` generará estos Issues a partir de una única frase de visión; 
 
 ### Fase 3 — Observabilidad (½ día) — *antes de cualquier change, para tener línea base*
 - [ ] `observability/compose.yaml` (OTel Collector + Grafana LGTM) y `otel-collector.yaml` (fan-out a LGTM + JSONL).
-- [ ] `.vscode/settings.json` con `github.copilot.chat.otel.*` (sección 9.4).
+- [x] Ajustes de usuario `github.copilot.chat.otel.*` vía `scripts/bootstrap/enable-agent-telemetry.ps1` (sección 9.4).
 - [ ] Hooks de fase en `.github/hooks/` y `scripts/sdd-metrics.ps1` (agregación por rama → Markdown + `history.csv`).
 - [ ] Dashboard Grafana `sdd-process` (por change, agente, modelo y tendencia).
 - **Criterio de salida:** una conversación de prueba con un subagente aparece en Grafana como traza anidada con tokens, y `sdd-metrics.ps1` genera la tabla.
@@ -656,7 +656,7 @@ El `po-analyst` generará estos Issues a partir de una única frase de visión; 
 - [ ] `*.instructions.md` por tipo de archivo (C#, tests, specs).
 - [ ] Los 10 custom agents de la sección 6.1 con sus herramientas mínimas.
 - [ ] Las 8 skills propias de la sección 6.4.
-- [ ] `.sdd/memory/lessons.md` y `approver-preferences.md` vacíos con su plantilla; workflow `on: pull_request_review` → `lesson-candidate`.
+- [x] `.sdd/memory/lessons.md` y `approver-preferences.md` con su plantilla; workflow `lesson-candidate.yml` (cada hora + bajo demanda desde `main`) → `lesson-candidate`.
 - [ ] Prompts `/sdd-new-requirement` y `/sdd-deliver`.
 - **Criterio de salida:** cada agente responde a una prueba en seco ("¿qué harías con el Issue X?") respetando su rol y citando la memoria.
 

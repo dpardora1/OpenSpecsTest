@@ -1,0 +1,33 @@
+{
+  "repo": "dpardora1/OpenSpecsTest",
+  "baseBranch": "main",
+  "branchPrefix": "sdd/",
+  "botSlug": "sdd-agent-mapps",
+  "approver": "dpardora1",
+  "project": {
+    "owner": "dpardora1",
+    "number": 3,
+    "statusField": "Status",
+    "changeIdField": "Change ID",
+    "statuses": {
+      "idea": "💡 Idea",
+      "approved": "✅ Requisito aprobado",
+      "spec": "📝 Spec en revisión",
+      "dev": "🛠️ En desarrollo",
+      "pr": "👀 PR lista",
+      "done": "🚀 Hecho"
+    }
+  },
+  "reviewers": ["reviewer-spec", "reviewer-architecture", "reviewer-security", "reviewer-tests"],
+  "maxReviewIterations": 3,
+  "blockingSeverities": ["BLOCKER", "HIGH"],
+  "blockingMinConfidence": 7,
+  "prSize": { "warnLines": 400, "failLines": 800 },
+  "memory": {
+    "lessonsFile": ".sdd/memory/lessons.md",
+    "approverPreferencesFile": ".sdd/memory/approver-preferences.md",
+    "lessonsMaxLines": 150,
+    "promotionThreshold": 2,
+    "consolidateEveryChanges": 3
+  }
+}

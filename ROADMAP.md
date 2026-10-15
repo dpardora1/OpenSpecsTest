@@ -170,7 +170,7 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 |---|---|---|---|---|---|
 | F3-01 | `observability/compose.yaml`: OTel Collector + `grafana/otel-lgtm` | 🤖 | Compose | F0-01 | `docker compose up` sano |
 | F3-02 | `otel-collector.yaml`: OTLP http :4318 → LGTM + fichero JSONL; procesador de *redaction* | 🤖 | Config | F3-01 | Spans llegan a ambos destinos |
-| F3-03 | `.vscode/settings.json` con `github.copilot.chat.otel.*` | 🤖 | Ajustes | F3-01 | Traza visible en Grafana |
+| F3-03 | Ajustes de usuario `github.copilot.chat.otel.*` (`scripts/bootstrap/enable-agent-telemetry.ps1`) | 🤖 | Script | F3-01 | Traza visible en Grafana |
 | F3-04 | Hooks de fase en `.github/hooks/` → eventos `sdd.phase.start/end` | 🤖 | Hooks + script | F0-04 | Evento por fase en JSONL (o alternativa del *spike*) |
 | F3-05 | `scripts/sdd-metrics.ps1`: agrega por rama `sdd/<id>` → tabla Markdown + fila en `history.csv` | 🤖 | Script | F3-02 | Tabla correcta con datos de prueba |
 | F3-06 | Dashboard Grafana `sdd-process` (change, agente, modelo, tendencia) | 🤖 | `dashboards/sdd-process.json` | F3-01 | Paneles con datos |
@@ -190,7 +190,7 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 | F4-07 | Agente orquestador `sdd-conductor` (rama `sdd/<id>`, delegación, máx. 3 iteraciones) | 🤖 | `.agent.md` | F4-03..06 | Recorre un flujo simulado |
 | F4-08 | 8 skills: `write-user-stories`, `dotnet-quality-gate`, `ef-core-migrations`, `spec-traceability`, `parallel-code-review`, `pr-evidence`, `capture-lessons`, `sdd-metrics` | 🤖 | `SKILL.md` | F4-01 | Cada skill se activa con su caso de uso |
 | F4-09 | Memoria: `.sdd/memory/lessons.md`, `approver-preferences.md` (plantillas), `.sdd/metrics/history.csv` (cabecera) | 🤖 | Ficheros | F4-01 | Formato documentado |
-| F4-10 | Workflow `on: pull_request_review` → Issue `lesson-candidate` con tus comentarios | 🤖 | YAML | F1-04 | Se dispara en PR de prueba |
+| F4-10 | Workflow `lesson-candidate.yml` → Issue `lesson-candidate` con tus comentarios. **Disparo:** cada hora + `workflow_dispatch` (siempre desde `main`), en lugar de `pull_request_review`, que ejecutaría el YAML de la rama de la PR (hallazgo de seguridad de la revisión F4) | 🤖 | YAML | F1-04 | `workflow_dispatch` con `dry_run` muestra los Issues que crearía |
 | F4-11 | Prompts `/sdd-new-requirement` y `/sdd-deliver <issue>` | 🤖 | `.prompt.md` | F4-07 | Aparecen como comandos en VS Code |
 | F4-12 | Prueba en seco de los 10 agentes ("¿qué harías con el Issue X?") | 🤖 | Informe en PR | F4-03..11 | Cada agente respeta su rol y cita la memoria |
 | ⛩️ | **Aprobar PR #4** | 👤 | — | — | — |
@@ -203,7 +203,7 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 | F5-02 | `scripts/traceability.ps1` (escenarios de deltas ↔ `[Trait("Scenario", …)]`) | 🤖 | Script | F2 | Falla si falta un escenario |
 | F5-03 | `ci.yml`: build, tests, cobertura (ReportGenerator → comentario PR), E2E Playwright (artefactos) | 🤖 | Workflow | F5-01 | Verde sin código / con C0 |
 | F5-04 | `spec-validation.yml`: `openspec validate --all --strict` + trazabilidad | 🤖 | Workflow | F5-02 | Falla con spec inválida |
-| F5-05 | `pr-guardrails.yml`: tamaño (aviso > 400, fallo > 800 líneas de producción), Conventional Commits, label de change | 🤖 | Workflow | F1-04 | Falla con PR enorme de prueba |
+| F5-05 | `pr-guardrails.yml`: tamaño (aviso > 400, fallo > 800 líneas de producción), Conventional Commits, label de change; **cambios en `.github/workflows|hooks|agents` o `scripts/` exigen label `process`** (promoción de L-005) | 🤖 | Workflow | F1-04 | Falla con PR enorme de prueba y con PR de feature que toca `.github/hooks` |
 | F5-06 | `mutation-testing.yml`: Stryker.NET incremental (`--since main`), informativo | 🤖 | Workflow | F5-03 | Score publicado en PR |
 | F5-07 | Contrato API: OpenAPI en build + `oasdiff` contra `main` (se activa en C1) | 🤖 | Paso CI | F5-03 | *Breaking change* detectado en prueba |
 | F5-08 | Migraciones: `dotnet ef migrations has-pending-model-changes` (se activa en C1) | 🤖 | Paso CI | F5-03 | Falla si falta migración |
