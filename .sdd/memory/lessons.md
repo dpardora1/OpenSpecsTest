@@ -43,6 +43,13 @@ Memoria procedimental del proceso SDD. **Todos los agentes la leen al empezar** 
 - Aplica a: sdd-conductor, retrospective, reviewer-security, implementer, pr-author, spec-architect · Tags: seguridad, prompt-injection, permisos
 - Ocurrencias: 5 · Estado: activa → candidata a promoción (check de CI en F5: cambios en `.github/workflows|hooks|agents` y `scripts/` exigen label `process`)
 
+### L-006 · Cuerpos de PR/Issue con comillas simples y `--body-file`
+- Origen: F4 PR #4 · el cuerpo publicado tenía `\main\` en lugar de `` `main` `` y perdió una letra (`` `b `` = retroceso en PowerShell)
+- Contexto: en here-strings de comillas dobles de PowerShell el backtick es carácter de escape y rompe el Markdown
+- Regla: genera el Markdown con here-strings de **comillas simples** (`@' … '@`) e inserta los datos con `.Replace('__TOKEN__', $valor)`; publica siempre con `--body-file`; después comprueba el cuerpo publicado (`gh pr view --json body`)
+- Aplica a: pr-author, po-analyst, retrospective · Tags: github, markdown, powershell
+- Ocurrencias: 1 · Estado: activa
+
 ## Histórico
 
 _(vacío)_
