@@ -31,23 +31,16 @@ $t = 'Reserva solapada rechazada'
 ## Comprobación
 
 ```powershell
-& "$env:SDD_TOOLS/scripts/traceability.ps1" -Change <id>     # (fase F5) falla si algún escenario del change no tiene test o su test falla
-dotnet test --filter "Scenario=bookings/reserva-solapada-rechazada"   # ejecutar los tests de un escenario
+& "$env:SDD_TOOLS/scripts/quality-gate.ps1" -Change <id>                 # ejecuta los tests y traza con el TRX resultante
+& "$env:SDD_TOOLS/scripts/traceability.ps1" -Change <id> -ResultsDir <carpeta con *.trx>   # solo la trazabilidad
+dotnet test --filter-trait "Scenario=bookings/reserva-solapada-rechazada" # ejecutar los tests de un escenario (MTP)
 ```
 
-Hasta que exista `scripts/traceability.ps1` (F5), comprueba a mano que cada escenario del change tiene su trait:
-
-```powershell
-$slug = { param($t) ($t.Normalize('FormD') -replace '\p{Mn}', '').ToLowerInvariant() -replace '[^a-z0-9]+', '-' -replace '^-|-$', '' }
-Get-ChildItem openspec/changes/<id>/specs -Recurse -Filter spec.md | ForEach-Object {
-    $cap = $_.Directory.Name
-    Select-String -Path $_.FullName -Pattern '^#### Scenario:\s*(.+)$' | ForEach-Object {
-        $trait = "$cap/$(& $slug $_.Matches[0].Groups[1].Value.Trim())"
-        $found = Select-String -Path (Get-ChildItem tests -Recurse -Filter *.cs) -SimpleMatch "`"Scenario`", `"$trait`"" -Quiet
-        "{0,-60} {1}" -f $trait, $(if ($found) { '✅' } else { '❌ sin test' })
-    }
-}
-```
+- **Fuente de verdad:** el TRX de Microsoft.Testing.Platform, que incluye los traits de cada test y su resultado. Un escenario pasa solo si ≥ 1 test con su trait **se ejecutó y pasó** y ninguno falló.
+- Sin TRX (p. ej. sin solución .NET), `traceability.ps1` busca los traits en `tests/**/*.cs` y los marca como "no ejecutado".
+- Escenarios considerados: los de `## ADDED Requirements` y `## MODIFIED Requirements` de los deltas. Los `REMOVED`/`RENAMED` no necesitan test.
+- Un change de tooling o documentación declara `skip_specs: true` en su `.openspec.yaml` y no necesita trazabilidad.
+- Avisa de **traits huérfanos**: traits de la misma capacidad que no corresponden a ningún escenario del change ni de las specs vigentes, normalmente una errata en el slug.
 
 ## Tabla para la PR
 
