@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: "SDD agent process"
+    folder: "SDD"
+    type: file
+    disableDeletion: true
+    allowUiUpdates: true
+    options:
+      path: /otel-lgtm/sdd-dashboards
+      foldersFromFilesStructure: false

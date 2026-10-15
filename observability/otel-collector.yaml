@@ -1,0 +1,62 @@
+# OpenTelemetry Collector for agent telemetry (GitHub Copilot Chat in VS Code + Copilot CLI).
+# Fan-out: Grafana LGTM (Tempo/Prometheus/Loki) for exploration + JSONL file for scripts/sdd-metrics.ps1.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch: {}
+
+  # Masks tokens and credentials that could leak into prompts or tool arguments (captureContent is on, D-07).
+  transform/redact:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          - replace_all_patterns(attributes, "value", "gh[opsur]_[A-Za-z0-9]{20,}", "***REDACTED***")
+          - replace_all_patterns(attributes, "value", "github_pat_[A-Za-z0-9_]{20,}", "***REDACTED***")
+          - replace_all_patterns(attributes, "value", "(?i)(bearer|basic)\\s+[A-Za-z0-9._~+/=-]{16,}", "$$1 ***REDACTED***")
+          - replace_all_patterns(attributes, "value", "-----BEGIN [A-Z ]*PRIVATE KEY-----[\\s\\S]*?-----END [A-Z ]*PRIVATE KEY-----", "***REDACTED PRIVATE KEY***")
+    log_statements:
+      - context: log
+        statements:
+          - replace_all_patterns(attributes, "value", "gh[opsur]_[A-Za-z0-9]{20,}", "***REDACTED***")
+          - replace_all_patterns(attributes, "value", "(?i)(bearer|basic)\\s+[A-Za-z0-9._~+/=-]{16,}", "$$1 ***REDACTED***")
+
+  # Promotes the SDD correlation resource attributes (set via OTEL_RESOURCE_ATTRIBUTES) to metric labels,
+  # so Prometheus can group token usage and durations by change and phase.
+  transform/sdd-labels:
+    error_mode: ignore
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["sdd.change_id"], resource.attributes["sdd.change_id"]) where resource.attributes["sdd.change_id"] != nil
+          - set(attributes["sdd.phase"], resource.attributes["sdd.phase"]) where resource.attributes["sdd.phase"] != nil
+
+exporters:
+  otlphttp/lgtm:
+    endpoint: http://lgtm:4318
+  file/jsonl:
+    path: /telemetry/otel.jsonl
+    rotation:
+      max_megabytes: 50
+      max_backups: 5
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [transform/redact, batch]
+      exporters: [otlphttp/lgtm, file/jsonl]
+    metrics:
+      receivers: [otlp]
+      processors: [transform/sdd-labels, batch]
+      exporters: [otlphttp/lgtm, file/jsonl]
+    logs:
+      receivers: [otlp]
+      processors: [transform/redact, batch]
+      exporters: [otlphttp/lgtm, file/jsonl]
