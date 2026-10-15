@@ -11,10 +11,10 @@ Requiere el stack local de observabilidad (`docker compose -f observability/comp
 ## 1. Marcar fases
 
 ```powershell
-./scripts/sdd-phase.ps1 -Change <id> -Phase apply -Action start
+& "$env:SDD_TOOLS/scripts/sdd-phase.ps1" -Change <id> -Phase apply -Action start
 # … trabajo de la fase …
-./scripts/sdd-phase.ps1 -Change <id> -Phase apply -Action end -Status ok      # o -Status error
-./scripts/sdd-phase.ps1 -Change <id> -Phase review -Action start -Iteration 2   # fases repetidas: -Iteration
+& "$env:SDD_TOOLS/scripts/sdd-phase.ps1" -Change <id> -Phase apply -Action end -Status ok      # o -Status error
+& "$env:SDD_TOOLS/scripts/sdd-phase.ps1" -Change <id> -Phase review -Action start -Iteration 2   # fases repetidas: -Iteration
 ```
 
 Fases: `explore`, `propose`, `apply`, `verify`, `review`, `archive`, `retrospective`, `pr`, `consolidation`.
@@ -32,9 +32,9 @@ Fases: `explore`, `propose`, `apply`, `verify`, `review`, `archive`, `retrospect
 ## 3. Obtener métricas
 
 ```powershell
-./scripts/sdd-metrics.ps1 -Change <id>                                         # tabla Markdown (sección 📈 de la PR)
-./scripts/sdd-metrics.ps1 -Change <id> -Format json                            # para análisis
-./scripts/sdd-metrics.ps1 -Change <id> -ReviewIterations 2 -Blockers 1 -AppendHistory   # registra la fila en history.csv
+& "$env:SDD_TOOLS/scripts/sdd-metrics.ps1" -Change <id>                                         # tabla Markdown (sección 📈 de la PR)
+& "$env:SDD_TOOLS/scripts/sdd-metrics.ps1" -Change <id> -Format json                            # para análisis
+& "$env:SDD_TOOLS/scripts/sdd-metrics.ps1" -Change <id> -ReviewIterations 2 -Blockers 1 -AppendHistory   # registra la fila en history.csv
 ```
 
 ## 4. Leer la tendencia

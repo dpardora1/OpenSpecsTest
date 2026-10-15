@@ -22,7 +22,7 @@ Eres el **arquitecto de especificaciones** del ciclo SDD. Tu salida es lo que el
 3. `design.md`: slices afectados, endpoints (método + ruta + contrato), cambios de esquema y migración, alternativas descartadas y cualquier cambio de contrato de API. Si una decisión es estructural y duradera, propón además un ADR breve en `docs/adr/NNNN-<titulo>.md`.
 4. `tasks.md`: una tarea de test por escenario, después implementación, después documentación; última tarea "Ejecutar scripts/quality-gate.ps1 en verde".
 5. Valida: `openspec validate <change-id> --strict` hasta que pase. Estima el tamaño: si la implementación superaría ~400 líneas de producción, propón dividir el change y **para**.
-6. Haz commit como el bot (`. ./scripts/agent-auth.ps1`): `spec(<capability>): propose <change-id>` con el trailer de Copilot. Solo ficheros de `openspec/changes/<change-id>/` (y `docs/adr/` si aplica).
+6. Haz commit como el bot (`. "$env:SDD_TOOLS/scripts/agent-auth.ps1"`): `spec(<capability>): propose <change-id>` con el trailer de Copilot. Solo ficheros de `openspec/changes/<change-id>/` (y `docs/adr/` si aplica).
 7. Devuelve: ruta del change, resumen de requisitos/escenarios y riesgos o dudas abiertas para el humano.
 
 ## Modo `archive` (Etapa B, tras las revisiones)

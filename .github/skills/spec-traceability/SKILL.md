@@ -31,7 +31,7 @@ $t = 'Reserva solapada rechazada'
 ## Comprobación
 
 ```powershell
-./scripts/traceability.ps1 -Change <id>     # (fase F5) falla si algún escenario del change no tiene test o su test falla
+& "$env:SDD_TOOLS/scripts/traceability.ps1" -Change <id>     # (fase F5) falla si algún escenario del change no tiene test o su test falla
 dotnet test --filter "Scenario=bookings/reserva-solapada-rechazada"   # ejecutar los tests de un escenario
 ```
 

@@ -24,15 +24,14 @@ Los revisores **nunca ejecutan** código del change: builds, tests o scripts de 
 | Evidencia | Origen |
 |---|---|
 | `diff.patch`, `diff-stat.txt`, `commits.txt` | `git diff/log` contra la rama base (lo genera el script) |
-| `quality-gate.txt` | Salida del quality gate que el conductor guarda antes de la revisión (`./scripts/quality-gate.ps1 *> .sdd/reviews/<id>/iter-<i>/quality-gate.txt`) |
+| `quality-gate.txt` | Salida del quality gate que el conductor guarda **después** de `-PrepareOnly` (que crea la carpeta) y antes de la revisión: `& "$env:SDD_TOOLS/scripts/quality-gate.ps1" -Change <id> *> .sdd/reviews/<id>/iter-<i>/quality-gate.txt` |
 
 ## Lanzamiento
 
 **Modo B — script (por defecto; determinista, también en CI).** Ejecuta siempre la copia de `origin/main`, para que un change no pueda sustituir a su propio revisor:
 
 ```powershell
-$tool = Join-Path ([IO.Path]::GetTempPath()) 'sdd-parallel-review.ps1'
-git show origin/main:scripts/parallel-review.ps1 | Set-Content $tool -Encoding utf8
+$tool = "$env:SDD_TOOLS/scripts/parallel-review.ps1"   # copia de origin/main (AGENTS.md §3)
 & $tool -Change <id> -Iteration <i>
 ```
 

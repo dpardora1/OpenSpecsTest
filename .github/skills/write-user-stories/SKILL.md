@@ -87,11 +87,11 @@ Depende de #12 (add-authentication)
 ## 4. Crear los Issues
 
 ```powershell
-. ./scripts/agent-auth.ps1                                   # identidad del bot
+. "$env:SDD_TOOLS/scripts/agent-auth.ps1"                                   # identidad del bot
 $body = Join-Path $env:TEMP "story-<change-id>.md"            # escribe el cuerpo aquí (fuera del repo)
 gh issue create --title "[C4] bookings: crear reserva" --body-file $body `
   --label needs-approval --milestone "M4 · MVP de reservas"
-./scripts/sdd-board.ps1 -Issue <n> -Status idea -ChangeId add-create-booking
+& "$env:SDD_TOOLS/scripts/sdd-board.ps1" -Issue <n> -Status idea -ChangeId add-create-booking
 ```
 
 - Título: `[Cn] <capacidad>: <resumen en minúscula>`; `Cn` según el backlog del ROADMAP (§5, F9) o el siguiente libre.

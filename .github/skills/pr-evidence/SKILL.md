@@ -18,7 +18,7 @@ El aprobador debe poder decidir **solo con la PR**. Cada afirmación lleva su ev
 | 🤖 Revisiones multi-agente | `.sdd/reviews/<id>/iter-<n>/consolidated.md` (skill `parallel-code-review`) |
 | ⚠️ Riesgos y decisiones | `design.md`, observaciones no bloqueantes, falsos positivos descartados con su razón |
 | 🧠 Lecciones | IDs nuevos o actualizados en `.sdd/memory/lessons.md` (los devuelve `retrospective`) |
-| 📈 Métricas | `./scripts/sdd-metrics.ps1 -Change <id>` (pega la salida tal cual) |
+| 📈 Métricas | `& "$env:SDD_TOOLS/scripts/sdd-metrics.ps1" -Change <id>` (pega la salida tal cual) |
 | 🧪 Cómo probarlo | Comando del AppHost + endpoint o pantalla concreta del change |
 
 ## Comandos útiles
@@ -27,13 +27,13 @@ El aprobador debe poder decidir **solo con la PR**. Cada afirmación lleva su ev
 openspec show <id> --json --deltas-only                     # requisitos/escenarios del change
 git --no-pager diff --stat origin/main...HEAD               # tamaño (líneas de producción = src/**)
 dotnet test --logger "console;verbosity=normal"             # resultado por test
-./scripts/sdd-metrics.ps1 -Change <id>                      # tabla 📈
+& "$env:SDD_TOOLS/scripts/sdd-metrics.ps1" -Change <id>                      # tabla 📈
 ```
 
 ## Crear la PR (como el bot)
 
 ```powershell
-. ./scripts/agent-auth.ps1
+. "$env:SDD_TOOLS/scripts/agent-auth.ps1"
 $body = Join-Path $env:TEMP "pr-<id>.md"                      # genera aquí el cuerpo completo
 gh pr create --base main --head sdd/<id> --title "<tipo>(<cap>): <resumen> (<id>)" `
   --body-file $body --label implementation --milestone "<milestone del Issue>"

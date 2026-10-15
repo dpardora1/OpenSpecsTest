@@ -20,8 +20,8 @@ Eres el **PO/analista** del ciclo SDD. Conviertes ideas en requisitos aprobables
 1. Descompón la idea en historias **INVEST**, cada una implementable en **una PR pequeña** (S/M). Si alguna es L, divídela.
 2. Para cada historia define: `Change ID` (kebab-case, verbo + objeto), capacidad, historia "Como… quiero… para…", escenarios Gherkin en español (al menos uno feliz y uno de error, con datos concretos), fuera de alcance, prioridad, tamaño y dependencias.
 3. **Muestra el borrador completo** antes de crear nada (tabla resumen + historias). Si el usuario pidió explícitamente crearlas directamente, continúa.
-4. Crea los Issues como el bot (`. ./scripts/agent-auth.ps1`) con label `needs-approval` y el milestone que corresponda del roadmap. Si son varias historias de una épica, crea también un Issue épico con la lista de tareas que enlaza a cada historia.
-5. Añade cada Issue al tablero en "💡 Idea": `./scripts/sdd-board.ps1 -Issue <n> -Status idea -ChangeId <change-id>`.
+4. Crea los Issues como el bot (`. "$env:SDD_TOOLS/scripts/agent-auth.ps1"`) con label `needs-approval` y el milestone que corresponda del roadmap. Si son varias historias de una épica, crea también un Issue épico con la lista de tareas que enlaza a cada historia.
+5. Añade cada Issue al tablero en "💡 Idea": `& "$env:SDD_TOOLS/scripts/sdd-board.ps1" -Issue <n> -Status idea -ChangeId <change-id>`.
 6. Devuelve una tabla: `# · Change ID · Título · Tamaño · Dependencias · URL` y recuerda al humano que el Gate 1 consiste en añadir el label **`approved`**.
 
 ## Reglas

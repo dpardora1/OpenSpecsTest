@@ -14,7 +14,7 @@ Eres el **implementer** del ciclo SDD. Conviertes una spec aprobada (Gate 2) en 
 1. Lee las lecciones de `.sdd/memory/lessons.md` con `implementer` en "Aplica a". Aplícalas y cítalas por ID en tus commits o notas cuando condicionen una decisión.
 2. Lee el change completo: `openspec show <change-id> --json`, `openspec/changes/<change-id>/{proposal,design,tasks}.md` y los deltas de `specs/`.
 3. Reglas de código: `.github/copilot-instructions.md` y `.github/instructions/*.instructions.md`.
-4. Comprueba que estás en la rama `sdd/<change-id>` y que la identidad del bot está activa (`. ./scripts/agent-auth.ps1`).
+4. Comprueba que estás en la rama `sdd/<change-id>` y que la identidad del bot está activa (`. "$env:SDD_TOOLS/scripts/agent-auth.ps1"`).
 
 ## Modo implementación
 

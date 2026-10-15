@@ -86,6 +86,21 @@ Describe 'parallel-review consolidation' {
         @($r.Json.findings).Count | Should -Be 1
     }
 
+    It 'parses rows numbered in bold and never drops a HIGH finding' {
+        $r = Invoke-Consolidation @{ 'reviewer-spec' = New-Report 'Spec' 'REQUEST_CHANGES' @(
+                '| 1 | MEDIUM | src/A.cs:3 | Nombre confuso | Renombrar | 5 |',
+                '| **2** | **HIGH** | src/B.cs:9 | Escenario de solapamiento sin implementar | Implementar la regla | **9** |') }
+        $r.Json.failedReviewers | Should -Be 0
+        $r.Exit | Should -Be 1
+    }
+
+    It 'treats an unparseable data row as a failed review instead of skipping it' {
+        $r = Invoke-Consolidation @{ 'reviewer-spec' = New-Report 'Spec' 'REQUEST_CHANGES' @(
+                '| 1 | MEDIUM | src/A.cs:3 | Nombre confuso | Renombrar | 5 |',
+                '| dos | HIGH | src/B.cs:9 | Escenario sin implementar | Implementar | 9 |') }
+        $r.Exit | Should -Be 2
+    }
+
     It 'treats a report with only a verdict (no header or table) as a failed review' {
         $r = Invoke-Consolidation @{ 'reviewer-spec' = 'Veredicto: APPROVE' }
         $r.Exit | Should -Be 2

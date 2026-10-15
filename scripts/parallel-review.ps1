@@ -128,12 +128,24 @@ function Read-ReviewReport([string]$reviewer, [string]$text) {
     $verdictLines = @($lines | Where-Object { $_ -match '^\s*[-*>]*\s*\**Veredicto\**\s*:' } | Where-Object { -not ($_ -match 'APPROVE' -and $_ -match 'REQUEST_CHANGES') })
     $verdicts = @($verdictLines | ForEach-Object { if ($_ -match '\b(APPROVE|REQUEST_CHANGES)\b') { $Matches[1] } } | Select-Object -Unique)
     $verdict = if ($verdicts.Count -eq 1) { $verdicts[0] } else { $null }
-    $rows = @($lines | Where-Object { $_ -match '^\s*\|\s*\d+\s*\|' })
-    $noFindingsRow = @($lines | Where-Object { $_ -match '^\s*\|\s*-\s*\|' -and $_ -match '(?i)sin hallazgos' }).Count -gt 0
+    # Every data row of the contract table must parse (not only rows whose first cell is a plain number):
+    # a row numbered "**2**" or otherwise malformed must invalidate the report instead of being skipped.
+    $headerIdx = -1
+    for ($i = 0; $i -lt $lines.Count; $i++) { if ($lines[$i] -match '^\s*\|\s*#\s*\|' -and $lines[$i] -match 'Severidad') { $headerIdx = $i; break } }
+    $rows = [System.Collections.Generic.List[string]]::new()
+    $noFindingsRow = $false
+    if ($headerIdx -ge 0) {
+        for ($i = $headerIdx + 1; $i -lt $lines.Count -and $lines[$i] -match '^\s*\|'; $i++) {
+            if ($lines[$i] -match '^\s*\|[\s|:-]+\|?\s*$') { continue }   # separator row
+            $first = (Split-TableRow $lines[$i])[0].Trim('*', ' ')
+            if ($first -eq '-' -and $lines[$i] -match '(?i)sin hallazgos') { $noFindingsRow = $true; continue }
+            $rows.Add($lines[$i])
+        }
+    }
     $badRows = 0
     foreach ($row in $rows) {
         $cells = Split-TableRow $row
-        if ($cells.Count -ne 6 -or $cells[1].Trim('*', ' ') -notmatch '^(BLOCKER|HIGH|MEDIUM|LOW)$' -or $cells[5].Trim('*', ' ') -notmatch '^\d+$') { $badRows++; continue }
+        if ($cells.Count -ne 6 -or $cells[0].Trim('*', ' ') -notmatch '^\d+$' -or $cells[1].Trim('*', ' ') -notmatch '^(BLOCKER|HIGH|MEDIUM|LOW)$' -or $cells[5].Trim('*', ' ') -notmatch '^\d+$') { $badRows++; continue }
         $location = $cells[2].Trim().Trim('`').Trim()
         $file = $location; $lineNo = 0
         if ($location -match '^(.+?):(\d+)') { $file = $Matches[1]; $lineNo = [int]$Matches[2] }
@@ -239,6 +251,17 @@ else {
         $evidence = Join-Path $worktree '.sdd-review'
         New-Item -ItemType Directory -Force $evidence | Out-Null
         Get-ChildItem $OutDir -File | Where-Object Name -in 'diff.patch', 'diff-stat.txt', 'commits.txt', 'quality-gate.txt' | Copy-Item -Destination $evidence
+        # The worktree is the UNREVIEWED commit: drop every file the CLI could load as instructions or configuration
+        # (F4 review, iteration 3). Project guidance from the base branch is restored as plain reference files and
+        # the CLI also runs with --no-custom-instructions.
+        foreach ($rel in 'AGENTS.md', 'CLAUDE.md', 'GEMINI.md', '.github/copilot-instructions.md', '.github/instructions', '.github/skills',
+            '.github/hooks', '.github/prompts', '.github/agents', '.github/copilot', '.claude', '.vscode') {
+            Remove-Item (Join-Path $worktree $rel) -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        foreach ($rel in 'AGENTS.md', '.github/copilot-instructions.md', '.github/instructions') {
+            git -C $worktree checkout $Base -- $rel 2>$null
+        }
+        New-Item -ItemType Directory -Force (Join-Path $worktree '.github/agents') | Out-Null
         $models = @{}
         foreach ($reviewer in $Reviewers) {
             $agent = Get-TrustedFile ".github/agents/$reviewer.agent.md"
@@ -268,7 +291,7 @@ else {
                 $output = ''
                 foreach ($model in $models) {
                     $start = [DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-                    $cliArgs = @('-p', $prompt, '--agent', $reviewer, '--no-ask-user', '-s', '--disable-builtin-mcps',
+                    $cliArgs = @('-p', $prompt, '--agent', $reviewer, '--no-ask-user', '-s', '--disable-builtin-mcps', '--no-custom-instructions',
                         '--available-tools', 'view', 'glob', 'grep',
                         '--secret-env-vars', 'GH_TOKEN', 'GITHUB_TOKEN', 'GH_ENTERPRISE_TOKEN')
                     if ($model) { $cliArgs += @('--model', $model) }
