@@ -496,3 +496,5 @@ copilot-session-*.md
 node_modules/
 playwright-report/
 test-results/
+# Raw reviewer reports (summarized in the PR)
+.sdd/reviews/

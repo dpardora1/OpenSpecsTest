@@ -34,8 +34,10 @@ Criterios:
 | `reviewer-spec` | `gpt-6.1-sol` | `gpt-6-sol` | Familia distinta al implementer |
 | `reviewer-architecture` | `gemini-4-argon` | `gemini-3.8-flash` | Familia distinta |
 | `reviewer-security` | `grok-4.7` | `grok-4.6` | Familia distinta |
-| `reviewer-tests` | `claude-sonnet-5.5` | `kimi-k3` | Claude, pero distinto modelo que el implementer |
+| `reviewer-tests` | `claude-sonnet-5.5` | `gpt-5.6-sol` | Claude, pero distinto modelo que el implementer. *Fallback original `kimi-k3` sustituido: no está disponible en la cuenta (API de modelos, 2026-10-15)* |
 | `pr-author` | `claude-haiku-5.5` | `gpt-5.4-mini` | Tarea mecánica, bajo coste |
 | `retrospective` | `gpt-6.1-sol` | `claude-sonnet-5.5` | Análisis y síntesis; perspectiva distinta al implementer |
 
 > La disponibilidad real de cada modelo en la cuenta se comprueba en F4-12 (prueba en seco). Si alguno no está disponible, se usa el fallback y se registra aquí.
+
+**Formato en los agentes (F4):** el campo `model` de cada `.agent.md` es una **lista de nombres visibles** con fallback, p. ej. `model: ['Claude Opus 5.5', 'Claude Sonnet 5.5']`. VS Code prueba los modelos en orden; Copilot CLI acepta el mismo formato (verificado: nombre visible, lista, id y nombre cualificado resuelven al mismo modelo). `scripts/parallel-review.ps1` lee esa lista y reintenta con el siguiente modelo si el primero falla.

@@ -19,8 +19,11 @@ flowchart LR
 ## Arranque
 
 ```powershell
+./scripts/bootstrap/enable-agent-telemetry.ps1     # una vez por máquina: ajustes de usuario de VS Code + carpeta de confianza del CLI
 docker compose -f observability/compose.yaml up -d
 ```
+
+Después, recarga VS Code (*Developer: Reload Window*).
 
 | Servicio | URL | Notas |
 |---|---|---|
@@ -33,7 +36,7 @@ Para parar: `docker compose -f observability/compose.yaml down`. Para **borrar t
 
 | Fuente | Configuración | Qué aporta |
 |---|---|---|
-| Copilot Chat (VS Code) | `.vscode/settings.json` (`github.copilot.chat.otel.*`) | Trazas de agentes y subagentes, tokens, herramientas. Correlación por rama `sdd/<change>` |
+| Copilot Chat (VS Code) | **Ajustes de usuario** (`github.copilot.chat.otel.*`, ámbito *application*: VS Code los ignora en `.vscode/settings.json`). Se aplican con `./scripts/bootstrap/enable-agent-telemetry.ps1` | Trazas de agentes y subagentes, tokens, herramientas. Correlación por rama `sdd/<change>` |
 | Copilot CLI | Variables de entorno (abajo) | Lo mismo + `sdd.change_id`/`sdd.phase` como atributos de recurso |
 | `scripts/sdd-phase.ps1` | Lo invoca el `sdd-conductor` | Inicio/fin de cada fase. Al terminar, publica un span `sdd.phase <fase>`; todas las fases de un change comparten traza |
 | Hooks (`.github/hooks/sdd-telemetry.json`) | Automático | `sessionStart/End`, `subagentStart/Stop`, `postToolUseFailure`, `errorOccurred` → `events.jsonl` (incluyen `traceparent`) |
@@ -59,7 +62,8 @@ Los tokens se suman desde los spans `chat` (los `invoke_agent` llevan totales de
 
 ## Lecciones de la puesta en marcha (F3)
 
-- **Los hooks del repo solo se ejecutan en carpetas de confianza.** En Copilot CLI la lista está en `~/.copilot/config.json` → `trustedFolders` (no en `settings.json`). La primera sesión interactiva en el repo la pide; en modo `-p` hay que tenerla ya concedida.
+- **Los hooks del repo solo se ejecutan en carpetas de confianza.** En Copilot CLI la lista está en `~/.copilot/config.json` → `trustedFolders` (no en `settings.json`). `enable-agent-telemetry.ps1` la configura (lección L-001).
+- **Los ajustes OTel de Copilot Chat son de usuario**, no de workspace (lección L-002).
 - **Procesos de vida corta:** cada ejecución del CLI exporta sus contadores una sola vez al terminar, así que `rate()`/`increase()` no devuelven nada. El dashboard usa `max_over_time(...[$__range])` por serie.
 - **Grafana LGTM solo lee el aprovisionamiento de dashboards al arrancar:** tras editar `dashboards/*.json`, ejecuta `docker compose -f observability/compose.yaml restart lgtm`.
 - **Redacción de secretos:** el collector enmascara tokens de GitHub (`gh*_`, `github_pat_`), cabeceras `Bearer/Basic` y claves privadas antes de exportar. Verificado con un token falso en el prompt: no aparece en ningún destino.

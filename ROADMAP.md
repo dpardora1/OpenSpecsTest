@@ -170,7 +170,7 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 |---|---|---|---|---|---|
 | F3-01 | `observability/compose.yaml`: OTel Collector + `grafana/otel-lgtm` | 🤖 | Compose | F0-01 | `docker compose up` sano |
 | F3-02 | `otel-collector.yaml`: OTLP http :4318 → LGTM + fichero JSONL; procesador de *redaction* | 🤖 | Config | F3-01 | Spans llegan a ambos destinos |
-| F3-03 | `.vscode/settings.json` con `github.copilot.chat.otel.*` | 🤖 | Ajustes | F3-01 | Traza visible en Grafana |
+| F3-03 | Ajustes de usuario `github.copilot.chat.otel.*` (`scripts/bootstrap/enable-agent-telemetry.ps1`) | 🤖 | Script | F3-01 | Traza visible en Grafana |
 | F3-04 | Hooks de fase en `.github/hooks/` → eventos `sdd.phase.start/end` | 🤖 | Hooks + script | F0-04 | Evento por fase en JSONL (o alternativa del *spike*) |
 | F3-05 | `scripts/sdd-metrics.ps1`: agrega por rama `sdd/<id>` → tabla Markdown + fila en `history.csv` | 🤖 | Script | F3-02 | Tabla correcta con datos de prueba |
 | F3-06 | Dashboard Grafana `sdd-process` (change, agente, modelo, tendencia) | 🤖 | `dashboards/sdd-process.json` | F3-01 | Paneles con datos |
