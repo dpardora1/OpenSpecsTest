@@ -1,10 +1,18 @@
 # Same quality gate as local (scripts/quality-gate.ps1): process files, PowerShell, Pester, OpenSpec and, once the
 # .NET solution exists, build without warnings, format, tests with coverage and scenario traceability.
-# Read-only token: this job runs code from the PR branch, so it gets no write permissions and no secrets.
+#
+# Trust: this job runs code from the PR branch (builds and tests), so it gets a read-only token and no secrets.
+# The gate itself is the TRUSTED copy from origin/main (as $env:SDD_TOOLS locally, AGENTS.md §3): a PR cannot
+# weaken the control it is judged by. PRs labeled `process` that change scripts/ also run their own version, so
+# changes to the gate are validated too. Changes to this file require the `process` label (pr-guardrails, L-005).
+#
+# Parameters by PR type (label): implementation -> -Change <id from branch sdd/<id>> (traceability required);
+# spec / process / dependencies -> no -Change (OpenSpec validation still runs).
 name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled, ready_for_review]
   push:
     branches: [main]
   workflow_dispatch:
@@ -52,13 +60,38 @@ jobs:
         shell: pwsh
         env:
           HEAD_REF: ${{ github.head_ref }}
+          PR_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
-          $change = $null
-          if ($env:HEAD_REF -match '^sdd/([a-z0-9]+(-[a-z0-9]+)*)$' -and (Test-Path "openspec/changes/$($Matches[1])")) { $change = $Matches[1] }
-          $gateArgs = @{ Base = 'origin/main'; ResultsDir = "$env:RUNNER_TEMP/quality-gate"; OutFile = "$env:RUNNER_TEMP/quality-gate/summary.md" }
-          if ($change) { $gateArgs.Change = $change }
+          $labels = @(if ($env:PR_LABELS -and $env:PR_LABELS -ne 'null') { $env:PR_LABELS | ConvertFrom-Json })
+          $gateArgs = @{ Base = 'origin/main'; ResultsDir = "$env:RUNNER_TEMP/quality-gate" }
           New-Item -ItemType Directory -Force $gateArgs.ResultsDir | Out-Null
-          ./scripts/quality-gate.ps1 @gateArgs
+
+          if ($env:EVENT_NAME -eq 'pull_request' -and $labels -contains 'implementation') {
+            if ($env:HEAD_REF -notmatch '^sdd/([a-z0-9]+(-[a-z0-9]+)*)$') { throw "Implementation PRs must come from a branch named sdd/<change-id> (got '$env:HEAD_REF')." }
+            $gateArgs.Change = $Matches[1]
+          }
+
+          # Trusted gate from origin/main (bootstrap: the branch version while the gate does not exist in main).
+          $trusted = Join-Path $env:RUNNER_TEMP 'sdd-tools'
+          New-Item -ItemType Directory -Force $trusted | Out-Null
+          git archive -o "$trusted.tar" origin/main scripts 2>$null
+          if ($LASTEXITCODE -eq 0) { tar -xf "$trusted.tar" -C $trusted }
+          $gates = @()
+          if (Test-Path "$trusted/scripts/quality-gate.ps1") { $gates += @{ name = 'trusted (origin/main)'; path = "$trusted/scripts/quality-gate.ps1" } }
+          $touchesScripts = [bool](git diff --name-only origin/main...HEAD -- scripts/ 2>$null)
+          if (-not $gates -or ($labels -contains 'process' -and $touchesScripts)) {
+            if (-not $gates) { Write-Warning 'scripts/quality-gate.ps1 does not exist in origin/main yet: running the branch version (bootstrap).' }
+            $gates += @{ name = 'branch (this PR)'; path = './scripts/quality-gate.ps1' }
+          }
+
+          $failed = $false
+          foreach ($g in $gates) {
+            "## Gate: $($g.name)" | Add-Content $env:GITHUB_STEP_SUMMARY
+            & $g.path @gateArgs -OutFile "$($gateArgs.ResultsDir)/summary-$($gates.IndexOf($g)).md"
+            if ($LASTEXITCODE -ne 0) { $failed = $true }
+          }
+          if ($failed) { exit 1 }
 
       - name: Upload quality gate results
         if: always()

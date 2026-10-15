@@ -136,23 +136,34 @@ Invoke-Step 'coverage' {
     $reports = @(Get-ChildItem $testResults -Recurse -Filter *.cobertura.xml -ErrorAction SilentlyContinue | ForEach-Object FullName)
     if (-not $reports) { return @{ status = 'FAIL'; detail = 'no Cobertura report produced (Microsoft.Testing.Extensions.CodeCoverage missing?)' } }
     $cov = Get-ChangedFilesCoverage -CoberturaFiles $reports -ChangedFiles $changed -Root $root
-    $table = @('| Fichero | Líneas cubiertas | % |', '|---|---|---|') + @($cov.files | ForEach-Object { "| ``$($_.file)`` | $($_.covered)/$($_.valid) | $($_.rate) |" })
+    # Changed files absent from every report: fail unless they only contain declarations (nothing to execute).
+    $uncovered = @($cov.missing | Where-Object { Test-CSharpHasExecutableCode (Join-Path $root $_) })
+    $declOnly = @($cov.missing | Where-Object { $_ -notin $uncovered })
+    $table = @('| Fichero | Líneas cubiertas | % |', '|---|---|---|') +
+        @($cov.files | ForEach-Object { "| ``$($_.file)`` | $($_.covered)/$($_.valid) | $($_.rate) |" }) +
+        @($uncovered | ForEach-Object { "| ``$_`` | ❌ sin datos de cobertura (ningún test lo ejecuta) | 0 |" }) +
+        @($declOnly | ForEach-Object { "| ``$_`` | solo declaraciones (nada que ejecutar) | — |" })
     $details.Add("#### Cobertura de ficheros cambiados`n`n" + ($table -join "`n"))
-    if ($null -eq $cov.rate) { return @{ status = 'SKIP'; detail = 'changed files have no coverable lines' } }
+    if ($uncovered.Count) { return @{ status = 'FAIL'; detail = "$($uncovered.Count) changed file(s) with executable code but no coverage data" } }
+    if ($null -eq $cov.rate) { return @{ status = 'SKIP'; detail = 'changed files only contain declarations' } }
     if ($cov.rate -lt $CoverageThreshold) { @{ status = 'FAIL'; detail = "$($cov.rate)% < $CoverageThreshold% on $($cov.files.Count) changed file(s)" } }
     else { @{ status = 'PASS'; detail = "$($cov.rate)% >= $CoverageThreshold% on $($cov.files.Count) changed file(s)" } }
 }
-
 # 7 ---------------------------------------------------------------------------------------------------
 Invoke-Step 'traceability' {
-    if (-not $Change) { return @{ status = 'SKIP'; detail = 'no -Change given' } }
-    $out = & (Join-Path $PSScriptRoot 'traceability.ps1') -Change $Change -ResultsDir $(if ($dotnetRan) { $testResults }) -Root $root 2>&1 | Out-String
-    $ok = $LASTEXITCODE -eq 0
+    if (-not $Change) { return @{ status = 'SKIP'; detail = 'no -Change given (only implementation PRs trace scenarios)' } }
+    # Once a .NET solution exists, traceability must come from executed tests (TRX), never from source code alone.
+    $traceArgs = @{ Change = $Change; Root = $root }
+    if ($solution) { $traceArgs.ResultsDir = $testResults; $traceArgs.RequireTrx = $true }
+    $out = & (Join-Path $PSScriptRoot 'traceability.ps1') @traceArgs 2>&1 | Out-String
+    $code = $LASTEXITCODE
     $details.Add($out.Trim())
-    if ($ok) { @{ status = 'PASS'; detail = "all scenarios of $Change traced$(if (-not $dotnetRan) { ' (source only, not executed)' })" } }
-    else { @{ status = 'FAIL'; detail = "scenarios without passing tests in $Change (see details)" } }
+    switch ($code) {
+        0 { @{ status = 'PASS'; detail = "all scenarios of $Change traced by passing tests" } }
+        3 { @{ status = 'SKIP'; detail = "traits found in source only, tests not executed (no .NET solution)" } }
+        default { @{ status = 'FAIL'; detail = "scenarios of $Change without passing tests or without TRX evidence (see details)" } }
+    }
 }
-
 # Summary ---------------------------------------------------------------------------------------------
 $icon = @{ PASS = '✅'; FAIL = '❌'; SKIP = '⏭️' }
 $failed = @($results | Where-Object status -eq 'FAIL')

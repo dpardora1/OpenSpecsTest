@@ -54,6 +54,7 @@ if (fs.existsSync(wfDir)) {
     let wf;
     try { wf = YAML.parse(fs.readFileSync(path.join(wfDir, name), 'utf8')); } catch (e) { problems.push(`${rel}: invalid YAML (${e.message.split('\n')[0]})`); continue; }
     for (const [jobId, job] of Object.entries(wf.jobs || {})) {
+      if (job.uses && !job.uses.startsWith('./') && !/@[0-9a-f]{40}$/.test(job.uses.split(' ')[0])) problems.push(`${rel}: job '${jobId}' reusable workflow '${job.uses}' not pinned by commit SHA`);
       for (const step of job.steps || []) {
         if (step.uses && !step.uses.startsWith('./') && !/@[0-9a-f]{40}$/.test(step.uses.split(' ')[0])) problems.push(`${rel}: job '${jobId}' uses '${step.uses}' not pinned by commit SHA`);
         if (step.uses && step.uses.startsWith('actions/github-script@') && step.with && step.with.script) {

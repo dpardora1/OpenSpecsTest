@@ -203,13 +203,13 @@ Para que aprobar sea sencillo, **la puesta en marcha también se entrega en PRs 
 |---|---|---|---|---|---|---|
 | F5-01 | `scripts/quality-gate.ps1`: proceso (customizations, PowerShell, Pester, OpenSpec) + .NET si hay solución (build `-warnaserror`, format, tests con cobertura y TRX) + cobertura de ficheros cambiados ≥ 80 % + trazabilidad | 🤖 | Script + `scripts/lib/SddQuality.psm1` | F2 | Mismo resultado en local y en CI; ruta .NET probada de extremo a extremo | ✅ |
 | F5-02 | `scripts/traceability.ps1`: escenarios ADDED/MODIFIED ↔ traits del **TRX** (lo que se ejecutó), con respaldo en el código fuente | 🤖 | Script + 15 tests Pester | F2 | Falla si un escenario no tiene test o su test falla | ✅ |
-| F5-03 | `ci.yml`: job `quality-gate` (token de solo lectura); resultados como artefacto y *job summary* | 🤖 | Workflow | F5-01 | Verde sin código; .NET se activa solo con C0 | ✅ |
+| F5-03 | `ci.yml`: job `quality-gate` con token de solo lectura que ejecuta **la copia del gate de `origin/main`** (más la de la rama en PRs `process` que tocan `scripts/`). Parámetros según el label: `implementation` → `-Change <id>` de la rama `sdd/<id>`; resultados como artefacto y *job summary* | 🤖 | Workflow | F5-01 | Verde sin código; .NET se activa solo con C0 | ✅ |
 | F5-04 | ~~`spec-validation.yml`~~ → **integrado en el quality gate** (pasos `openspec` y `traceability`), así no hay dos fuentes de verdad | 🤖 | — | F5-02 | Falla con spec inválida | ✅ |
-| F5-05 | `pr-guardrails.yml`: título Conventional Commits, un label de tipo, **rutas del proceso exigen `process`** (promoción de L-005), PR de spec solo con specs, tamaño (aviso > 400, fallo > 800) | 🤖 | Workflow | F1-04 | Falla con PR enorme de prueba y con PR de feature que toca `.github/hooks` | ✅ |
+| F5-05 | `pr-guardrails.yml` sobre **`pull_request_target`** (el YAML siempre viene de `main`; publica el estado `sdd/guardrails` en el commit de la PR): título Conventional Commits, un label de tipo, **rutas del proceso exigen `process`** (promoción de L-005; excepción para Dependabot solo con cambios `uses:` por SHA), PR de spec solo con specs, tamaño (aviso > 400, fallo > 800) | 🤖 | Workflow | F1-04 | Falla con PR enorme de prueba y con PR de feature que toca `.github/hooks` | ✅ |
 | F5-06 | Stryker.NET incremental (`--since main`), informativo | 🤖 | Workflow | C0 | Score publicado | ⏭️ C0 |
 | F5-07 | Contrato API: OpenAPI en build + `oasdiff` contra `main` | 🤖 | Paso CI | C1 | *Breaking change* detectado en prueba | ⏭️ C1 |
 | F5-08 | Migraciones: `dotnet ef migrations has-pending-model-changes` | 🤖 | Paso del gate | C1 | Falla si falta migración | ⏭️ C1 |
-| F5-09 | Checks `quality-gate` y `guardrails` requeridos en el ruleset de `main` | 🤖 | Ruleset | F5-03..05 | PR sin checks no mergeable | ✅ |
+| F5-09 | Checks requeridos en el ruleset de `main`: `quality-gate` (en esta PR) y `sdd/guardrails` (justo tras el merge, porque `pull_request_target` solo existe cuando el workflow está en `main`) | 🤖 | Ruleset | F5-03..05 | PR sin checks no mergeable | 🔄 |
 | F5-10 | `lesson-candidate.yml` captura también los **comentarios generales** del aprobador | 🤖 | Workflow | F4-10 | `dry_run` lista el comentario de la PR #4 | ✅ |
 | ⛩️ | **Aprobar PR #5** | 👤 | — | — | 🏁 **M1** | |
 ### F6 · Backlog de producto + C0 `bootstrap-solution` — vie 23-oct → 🏁 **M2**

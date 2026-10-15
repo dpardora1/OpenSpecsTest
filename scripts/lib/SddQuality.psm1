@@ -61,8 +61,8 @@ function Get-SourceScenarioTraits {
     <# Fallback when no TRX exists: finds [Trait("Scenario", "<trait>")] in C# test sources. Returns { trait, file, line }. #>
     param([Parameter(Mandatory)][string]$TestsDir)
     if (-not (Test-Path $TestsDir)) { return @() }
-    foreach ($hit in (Get-ChildItem $TestsDir -Recurse -Filter *.cs | Select-String -Pattern '\[\s*Trait\s*\(\s*"Scenario"\s*,\s*"([^"]+)"\s*\)')) {
-        foreach ($m in $hit.Matches) { [pscustomobject]@{ trait = $m.Groups[1].Value.Trim(); file = $hit.Path; line = $hit.LineNumber } }
+    foreach ($hit in (Get-ChildItem $TestsDir -Recurse -Filter *.cs | Select-String -AllMatches -Pattern '\[\s*Trait\s*\(\s*"Scenario"\s*,\s*"([^"]+)"\s*\)|\bTrait\s*\(\s*"Scenario"\s*,\s*"([^"]+)"\s*\)')) {
+        foreach ($m in $hit.Matches) { [pscustomobject]@{ trait = ($m.Groups[1].Value + $m.Groups[2].Value).Trim(); file = $hit.Path; line = $hit.LineNumber } }
     }
 }
 
@@ -94,11 +94,23 @@ function Get-TraceabilityReport {
     [pscustomobject]@{ rows = $rows; failures = @($rows | Where-Object { $_.status -in 'missing', 'failed' }).Count; orphans = $orphans }
 }
 
+function Test-CSharpHasExecutableCode {
+    <#
+    Heuristic for changed files that do not appear in any coverage report: declarations-only files (interfaces, enums,
+    records/classes without bodies) have nothing to execute; anything with a method/accessor/lambda body does.
+    #>
+    param([Parameter(Mandatory)][string]$Path)
+    if (-not (Test-Path $Path)) { return $false }
+    $code = (Get-Content $Path -Raw) -replace '(?s)/\*.*?\*/', '' -replace '//[^\r\n]*', ''
+    $code -match '\)\s*(\{|=>)' -or $code -match '\b(get|set|init|add|remove)\s*(\{|=>)' -or $code -match '=>\s*[^;]'
+}
+
 function Get-ChangedFilesCoverage {
     <#
     Line coverage of the changed source files, merged across Cobertura reports (several test projects can cover the
     same file: a line counts as covered if any report hits it). Paths are compared as repo-relative, '/'-separated.
-    Returns { files: [{ file, covered, valid, rate }], covered, valid, rate } (rate = $null when there is nothing to measure).
+    Changed files that appear in no report are returned in `missing` (never silently ignored).
+    Returns { files: [{ file, covered, valid, rate }], missing: [file], covered, valid, rate } (rate = $null when nothing measured).
     #>
     param([string[]]$CoberturaFiles, [string[]]$ChangedFiles, [Parameter(Mandatory)][string]$Root)
     $norm = { param($p) ($p -replace '\\', '/').TrimStart('./') }
@@ -128,9 +140,11 @@ function Get-ChangedFilesCoverage {
         [pscustomobject]@{ file = $k; covered = $covered; valid = $valid; rate = $(if ($valid) { [Math]::Round(100 * $covered / $valid, 1) } else { $null }) }
     }
     $files = @($files)
+    $measured = @($files | ForEach-Object { $_.file.ToLowerInvariant() })
+    $missing = @($ChangedFiles | ForEach-Object { & $norm $_ } | Where-Object { $_.ToLowerInvariant() -notin $measured } | Sort-Object -Unique)
     $totalValid = ($files | Measure-Object valid -Sum).Sum ?? 0
     $totalCovered = ($files | Measure-Object covered -Sum).Sum ?? 0
-    [pscustomobject]@{ files = $files; covered = $totalCovered; valid = $totalValid; rate = $(if ($totalValid) { [Math]::Round(100 * $totalCovered / $totalValid, 1) } else { $null }) }
+    [pscustomobject]@{ files = $files; missing = $missing; covered = $totalCovered; valid = $totalValid; rate = $(if ($totalValid) { [Math]::Round(100 * $totalCovered / $totalValid, 1) } else { $null }) }
 }
 
-Export-ModuleMember -Function ConvertTo-ScenarioSlug, Get-ChangeScenarios, Get-TrxScenarioResults, Get-SourceScenarioTraits, Get-TraceabilityReport, Get-ChangedFilesCoverage
+Export-ModuleMember -Function ConvertTo-ScenarioSlug, Get-ChangeScenarios, Get-TrxScenarioResults, Get-SourceScenarioTraits, Get-TraceabilityReport, Test-CSharpHasExecutableCode, Get-ChangedFilesCoverage

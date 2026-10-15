@@ -162,6 +162,31 @@ Describe 'Get-ChangedFilesCoverage' {
         $cov = Get-ChangedFilesCoverage -CoberturaFiles "$TestDrive/d.cobertura.xml" -ChangedFiles 'src/New.cs' -Root '/repo'
         $cov.rate | Should -BeNullOrEmpty
     }
+
+    It 'lists changed files absent from every report instead of ignoring them' {
+        $root = Join-Path $TestDrive 'repo2'
+        New-Cobertura "$TestDrive/e.cobertura.xml" (Join-Path $root 'src/Covered.cs') @{ 1 = 1 }
+        $cov = Get-ChangedFilesCoverage -CoberturaFiles "$TestDrive/e.cobertura.xml" -ChangedFiles 'src/Covered.cs', 'src/NotInstrumented.cs' -Root $root
+        $cov.rate | Should -Be 100
+        $cov.missing | Should -Be @('src/NotInstrumented.cs')
+    }
+}
+
+Describe 'Test-CSharpHasExecutableCode' {
+    It 'is false for declaration-only files and true when there is something to execute' -TestCases @(
+        @{ name = 'interface'; code = "namespace A;`npublic interface IRepo`n{`n    Task<int> CountAsync(CancellationToken ct);`n}"; expected = $false }
+        @{ name = 'enum'; code = "namespace A;`npublic enum Sport { Padel, Tennis }"; expected = $false }
+        @{ name = 'positional record'; code = "namespace A;`npublic sealed record CourtDto(Guid Id, string Name);"; expected = $false }
+        @{ name = 'method body'; code = "public class C`n{`n    public int Add(int a, int b)`n    {`n        return a + b;`n    }`n}"; expected = $true }
+        @{ name = 'expression body'; code = 'public class C { public int Two() => 2; }'; expected = $true }
+        @{ name = 'property accessor'; code = 'public class C { private int x; public int X { get { return x; } } }'; expected = $true }
+        @{ name = 'commented code only'; code = "public interface I { }`n// public int Add(int a, int b) => a + b;"; expected = $false }
+    ) {
+        param($name, $code, $expected)
+        $path = Join-Path $TestDrive "$($name -replace '\s', '-').cs"
+        $code | Set-Content $path -Encoding utf8
+        Test-CSharpHasExecutableCode $path | Should -Be $expected
+    }
 }
 
 Describe 'traceability.ps1' {
@@ -195,7 +220,31 @@ Describe 'traceability.ps1' {
         New-Trx "$script:Repo/results/r.trx" @(
             @{ name = 'T1'; outcome = 'Passed'; traits = @('bookings/reserva-de-una-franja-libre') },
             @{ name = 'T2'; outcome = 'Passed'; traits = @('bookings/cancelacion-con-24-h-de-antelacion') })
-        $null = & pwsh -NoProfile -File $script:Traceability -Change 'add-x' -Root $script:Repo -ResultsDir "$script:Repo/results" 2>&1
+        $null = & pwsh -NoProfile -File $script:Traceability -Change 'add-x' -Root $script:Repo -ResultsDir "$script:Repo/results" -RequireTrx 2>&1
         $LASTEXITCODE | Should -Be 0
+    }
+
+    It 'fails with -RequireTrx when the results folder has no TRX (never falls back to source code)' {
+        New-SpecFile "$script:Repo/openspec/changes/add-x/specs/bookings/spec.md" $script:DeltaSpec
+        New-SpecFile "$script:Repo/tests/T.cs" '[Trait("Scenario", "bookings/reserva-de-una-franja-libre")] [Trait("Scenario", "bookings/cancelacion-con-24-h-de-antelacion")]'
+        New-Item -ItemType Directory -Force "$script:Repo/results" | Out-Null
+        $out = & pwsh -NoProfile -File $script:Traceability -Change 'add-x' -Root $script:Repo -ResultsDir "$script:Repo/results" -RequireTrx 2>&1 | Out-String
+        $LASTEXITCODE | Should -Be 1
+        $out | Should -Match 'No TRX'
+    }
+
+    It 'returns 3 (not executed) when traits are only found in source code, including several traits per line' {
+        New-SpecFile "$script:Repo/openspec/changes/add-x/specs/bookings/spec.md" $script:DeltaSpec
+        New-SpecFile "$script:Repo/tests/T.cs" '[Fact, Trait("Scenario", "bookings/reserva-de-una-franja-libre"), Trait("Scenario", "bookings/cancelacion-con-24-h-de-antelacion")]'
+        $null = & pwsh -NoProfile -File $script:Traceability -Change 'add-x' -Root $script:Repo 2>&1
+        $LASTEXITCODE | Should -Be 3
+    }
+
+    It 'ignores skip_specs: true when the change has scenarios' {
+        New-SpecFile "$script:Repo/openspec/changes/add-x/specs/bookings/spec.md" $script:DeltaSpec
+        New-SpecFile "$script:Repo/openspec/changes/add-x/.openspec.yaml" "schema: spec-driven`nskip_specs: true"
+        $out = & pwsh -NoProfile -File $script:Traceability -Change 'add-x' -Root $script:Repo 2>&1 | Out-String
+        $LASTEXITCODE | Should -Be 1
+        $out | Should -Match 'skip_specs: true.*se ignora'
     }
 }

@@ -36,10 +36,10 @@ $t = 'Reserva solapada rechazada'
 dotnet test --filter-trait "Scenario=bookings/reserva-solapada-rechazada" # ejecutar los tests de un escenario (MTP)
 ```
 
-- **Fuente de verdad:** el TRX de Microsoft.Testing.Platform, que incluye los traits de cada test y su resultado. Un escenario pasa solo si ≥ 1 test con su trait **se ejecutó y pasó** y ninguno falló.
-- Sin TRX (p. ej. sin solución .NET), `traceability.ps1` busca los traits en `tests/**/*.cs` y los marca como "no ejecutado".
+- **Fuente de verdad:** el TRX de Microsoft.Testing.Platform, que incluye los traits de cada test y su resultado. Un escenario pasa solo si ≥ 1 test con su trait **se ejecutó y pasó** y ninguno falló. Con `-RequireTrx` (lo usa el gate cuando hay solución .NET) la falta de TRX es un fallo.
+- Sin TRX (p. ej. sin solución .NET), `traceability.ps1` busca los traits en `tests/**/*.cs` y sale con código **3**: es un diagnóstico, nunca un aprobado.
 - Escenarios considerados: los de `## ADDED Requirements` y `## MODIFIED Requirements` de los deltas. Los `REMOVED`/`RENAMED` no necesitan test.
-- Un change de tooling o documentación declara `skip_specs: true` en su `.openspec.yaml` y no necesita trazabilidad.
+- Un change de tooling o documentación declara `skip_specs: true` en su `.openspec.yaml`. Solo se respeta si el change **no tiene escenarios** ADDED/MODIFIED: nunca puede ocultarlos.
 - Avisa de **traits huérfanos**: traits de la misma capacidad que no corresponden a ningún escenario del change ni de las specs vigentes, normalmente una errata en el slug.
 
 ## Tabla para la PR

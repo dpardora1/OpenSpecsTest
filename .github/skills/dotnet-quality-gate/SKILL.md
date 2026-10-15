@@ -27,8 +27,17 @@ Pasos (cada uno PASS / FAIL / SKIP) y lo que comprueban:
 | `pester` | Tests de los scripts del proceso (`tests/scripts`) | no hay `tests/scripts` |
 | `openspec` | `openspec validate --all --strict` | — |
 | `dotnet` | `restore` → `build -warnaserror` → `format --verify-no-changes` → `test` con cobertura (Cobertura) y TRX | no hay `*.slnx`/`*.sln` (antes de C0) |
-| `coverage` | Cobertura de líneas de los `.cs` de `src/` cambiados contra `origin/main` ≥ 80 % (sin migraciones ni código generado) | no hay cambios en `src/` |
-| `traceability` | Cada escenario ADDED/MODIFIED del change tiene ≥ 1 test **que se ejecutó y pasó** (traits leídos del TRX) | sin `-Change` |
+| `coverage` | Cobertura de líneas de los `.cs` de `src/` cambiados contra `origin/main` ≥ 80 % (sin migraciones ni código generado). Un fichero cambiado con código ejecutable que **no aparece en ningún informe** (ningún test lo ejecuta) es FAIL; uno con solo declaraciones (interfaz, enum, record posicional) se ignora | no hay cambios en `src/` |
+| `traceability` | Cada escenario ADDED/MODIFIED del change tiene ≥ 1 test **que se ejecutó y pasó** (traits leídos del TRX). Con solución .NET, la ausencia de TRX es FAIL; sin solución, los traits del código fuente dan SKIP, nunca PASS | sin `-Change` |
+
+**Qué parámetros usar según la PR** (el CI hace lo mismo a partir del label):
+
+| PR | Comando |
+|---|---|
+| `implementation` | `quality-gate.ps1 -Change <id>`: el change puede estar activo o ya archivado |
+| `spec`, `process`, `dependencies` | `quality-gate.ps1` sin `-Change`: la spec se valida con `openspec`, todavía no hay tests que trazar |
+
+En CI se ejecuta **la copia de `origin/main`** del gate, igual que `$env:SDD_TOOLS` en local, para que una PR no pueda debilitar el control que la juzga. Las PRs `process` que tocan `scripts/` ejecutan además la versión de la rama.
 
 Requisitos del proyecto .NET para que `dotnet` funcione (detalle en [docs/spikes/dotnet-testing.md](../../../docs/spikes/dotnet-testing.md)): `global.json` con `"test": { "runner": "Microsoft.Testing.Platform" }` y, en cada proyecto de tests, `xunit.v3.mtp-v2`, `Microsoft.Testing.Extensions.CodeCoverage` y `Microsoft.Testing.Extensions.TrxReport`.
 
