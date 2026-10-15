@@ -1,0 +1,95 @@
+name: Historia de usuario
+description: Requisito funcional para el ciclo SDD (lo redacta el agente po-analyst; el humano lo aprueba en Gate 1).
+title: "[Cx] <capacidad>: <resumen>"
+labels: [needs-approval]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Este Issue entra en el ciclo SDD cuando recibe el label **`approved`** (Gate 1).
+        Después, el agente `spec-architect` crea el change OpenSpec correspondiente.
+
+  - type: input
+    id: change-id
+    attributes:
+      label: Change ID (OpenSpec)
+      description: Identificador kebab-case del change, por ejemplo `add-create-booking`.
+      placeholder: add-...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: capability
+    attributes:
+      label: Capacidad
+      options: [courts, availability, identity, bookings, platform, otra]
+    validations:
+      required: true
+
+  - type: textarea
+    id: story
+    attributes:
+      label: Historia de usuario
+      description: Formato "Como … quiero … para …".
+      placeholder: |
+        Como jugador
+        quiero …
+        para …
+    validations:
+      required: true
+
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Criterios de aceptación (Gherkin)
+      description: Al menos un escenario feliz y uno de error. Se convertirán en escenarios de la spec y en tests trazados.
+      render: gherkin
+      placeholder: |
+        Escenario: …
+          Dado …
+          Cuando …
+          Entonces …
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Fuera de alcance
+      description: Lo que explícitamente NO incluye este cambio (evita scope creep).
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridad
+      options: [Alta, Media, Baja]
+    validations:
+      required: true
+
+  - type: dropdown
+    id: size
+    attributes:
+      label: Tamaño estimado
+      description: Si es L, debe dividirse antes de aprobarse.
+      options: [S (< 150 líneas), M (150-400 líneas), L (> 400 líneas — dividir)]
+    validations:
+      required: true
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencias
+      description: Issues o changes que deben estar terminados antes.
+      placeholder: "Depende de #…"
+
+  - type: checkboxes
+    id: dor
+    attributes:
+      label: Definition of Ready
+      options:
+        - label: La historia aporta valor y es independiente (INVEST)
+          required: true
+        - label: Hay al menos un escenario feliz y uno de error
+          required: true
+        - label: Cabe en una PR pequeña (S/M)
+          required: true

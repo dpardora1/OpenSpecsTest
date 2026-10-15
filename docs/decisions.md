@@ -16,8 +16,9 @@ Decisiones de la Fase F0 (F0-06 y F0-07). Cualquier cambio posterior se registra
 | D-08 | Experimento Mem0 / OpenMemory | Sí, desde C4, como experimento medible |
 | D-09 | Preview por PR en Azure | No para la demo base (backlog futuro) |
 | D-10 | PR de spec y PR de código | Separadas (modo rápido solo para cambios triviales) |
+| D-11 | Identidad de los agentes | **GitHub App `sdd-agent-mapps`**: commits y PRs firmados como `sdd-agent-mapps[bot]`. GitHub no permite aprobar PRs propias, y así el humano hace una aprobación real y se puede medir "0 líneas escritas por el humano". Credenciales fuera del repo en `~/.sdd/`. La sesión cambia a esta identidad con `. ./scripts/agent-auth.ps1` |
 
-## Modelos por agente (F0-06) — propuesta pendiente de aprobación
+## Modelos por agente (F0-06) — aprobada el 2026-10-15
 
 Criterios:
 - Los 4 revisores usan **familias de modelo distintas** entre sí y respecto al implementer, para reducir puntos ciegos compartidos.

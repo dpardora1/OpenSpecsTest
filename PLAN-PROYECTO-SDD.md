@@ -411,6 +411,7 @@ Iteraciones de revisión: n · Tendencia vs. media de changes anteriores: ▲/�
 ### 7.3 Protecciones del repositorio
 
 - *Branch protection* en `main`: PR obligatoria, 1 aprobación (tú), checks requeridos, historial lineal (*squash merge*).
+- **Identidad separada para los agentes**: una GitHub App (`sdd-agent-mapps[bot]`) firma commits y abre PRs. Como GitHub no permite aprobar PRs propias, esto garantiza que tu aprobación sea real y deja trazabilidad de quién escribió qué.
 - `CODEOWNERS` → tú como propietario de todo.
 - Labels de flujo: `needs-approval`, `approved`, `spec`, `implementation`, `blocked-by-review`.
 - GitHub Project (tablero) con columnas: *Idea → Requisito aprobado → Spec en revisión → En desarrollo → PR lista → Hecho*.
