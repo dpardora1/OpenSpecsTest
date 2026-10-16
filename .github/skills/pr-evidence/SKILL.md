@@ -32,12 +32,26 @@ dotnet test --logger "console;verbosity=normal"             # resultado por test
 
 ## Crear la PR (como el bot)
 
+`pr-author` **no tiene herramienta de edición de ficheros** (a propósito): genera el cuerpo en un fichero temporal **desde la terminal**, con un here-string de **comillas simples** (L-006) e insertando los datos con `.Replace()`:
+
 ```powershell
 . "$env:SDD_TOOLS/scripts/agent-auth.ps1"
-$body = Join-Path $env:TEMP "pr-<id>.md"                      # genera aquí el cuerpo completo
+$metrics = (& "$env:SDD_TOOLS/scripts/sdd-metrics.ps1" -Change <id> | Out-String).Trim()
+$body = Join-Path ([IO.Path]::GetTempPath()) "pr-<id>.md"
+@'
+## 🎯 Qué y por qué
+…
+## 📈 Métricas del ciclo
+
+__METRICS__
+'@.Replace('__METRICS__', $metrics) | Set-Content $body -Encoding utf8
 gh pr create --base main --head sdd/<id> --title "<tipo>(<cap>): <resumen> (<id>)" `
   --body-file $body --label implementation --milestone "<milestone del Issue>"
+Remove-Item $body
+gh pr view --json body --jq .body     # comprueba el Markdown publicado
 ```
+
+No intentes usar herramientas de creación o edición de ficheros (`create`, `edit`): no están disponibles para este agente.
 
 ## Reglas de estilo para el aprobador
 

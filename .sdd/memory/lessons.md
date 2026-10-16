@@ -15,12 +15,12 @@ Memoria procedimental del proceso SDD. **Todos los agentes la leen al empezar** 
 - Aplica a: sdd-conductor, retrospective · Tags: telemetría, hooks, entorno, seguridad
 - Ocurrencias: 2 · Estado: activa
 
-### L-002 · Los ajustes OTel de Copilot Chat son de ámbito usuario
-- Origen: F3/F4 observabilidad · las trazas de VS Code no llegaban con `.vscode/settings.json`
-- Contexto: `github.copilot.chat.otel.*` tiene `scope: application`; VS Code lo ignora a nivel de workspace
-- Regla: configúralo en los ajustes de usuario con `./scripts/bootstrap/enable-agent-telemetry.ps1`; no lo añadas a `.vscode/settings.json`
+### L-002 · Telemetría de agentes: ajustes de usuario + variables de entorno
+- Origen: F3/F4 observabilidad · las trazas de VS Code no llegaban con `.vscode/settings.json`; F6 `/sdd-new-requirement` · la sesión del agente (harness de Copilot, proceso Agent Host) no exportó sus trazas con solo los ajustes de usuario
+- Contexto: `github.copilot.chat.otel.*` tiene `scope: application` (VS Code lo ignora a nivel de workspace) y solo cubre el proceso de la extensión; las sesiones de agentes del harness de Copilot y Copilot CLI leen `COPILOT_OTEL_*` del entorno; con ajustes de telemetría gestionados por la enterprise hace falta `COPILOT_OTEL_ENDPOINT` explícito (verificado con el log `[rust:otel] configured from managed settings`)
+- Regla: configura ambos con `./scripts/bootstrap/enable-agent-telemetry.ps1` y reinicia VS Code por completo; no lo añadas a `.vscode/settings.json`; usa solo variables `COPILOT_OTEL_*` (no `OTEL_*` genéricas, que afectarían a otras aplicaciones)
 - Aplica a: sdd-conductor, retrospective · Tags: telemetría, vscode, entorno
-- Ocurrencias: 1 · Estado: activa
+- Ocurrencias: 2 · Estado: activa
 
 ### L-003 · Fechas con cultura invariante en los scripts
 - Origen: F3 `sdd-phase.ps1` · `ConvertFrom-Json` convertía el timestamp con la cultura `es-ES` y `Parse` fallaba
@@ -55,6 +55,13 @@ Memoria procedimental del proceso SDD. **Todos los agentes la leen al empezar** 
 - Contexto: la trazabilidad aprobaba con traits del código fuente sin tests ejecutados, y la cobertura ignoraba ficheros cambiados que ningún test instrumentaba
 - Regla: un control de calidad solo aprueba con evidencia de ejecución (TRX, Cobertura). Si falta la evidencia, el resultado es FAIL (o SKIP explícito cuando el paso no aplica), nunca PASS; cubre con tests el caso "sin evidencia"
 - Aplica a: implementer, reviewer-tests, retrospective · Tags: calidad, tests, cobertura, trazabilidad
+- Ocurrencias: 1 · Estado: activa
+
+### L-008 · Los procedimientos deben encajar con las herramientas del agente
+- Origen: F6 `/sdd-new-requirement` · po-analyst intentó 10 veces la herramienta `create` (no la tiene) para escribir el cuerpo de los Issues (hooks: `postToolUseFailure`)
+- Contexto: la skill decía "escribe el cuerpo aquí" sin indicar cómo, y el agente no tiene herramientas de edición a propósito
+- Regla: cuando una skill pide producir un fichero, indica la herramienta exacta disponible para el agente que la usa (p. ej. here-string + `Set-Content` desde la terminal); revisa los `postToolUseFailure` de `events.jsonl` en cada retrospectiva
+- Aplica a: retrospective, sdd-conductor · Tags: agentes, skills, herramientas
 - Ocurrencias: 1 · Estado: activa
 
 ## Histórico

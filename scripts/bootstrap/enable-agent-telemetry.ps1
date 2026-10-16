@@ -5,7 +5,13 @@
 .DESCRIPTION
     1. VS Code user settings: Copilot Chat OpenTelemetry export to the local collector. These settings are
        application-scoped, so they are ignored in .vscode/settings.json (lesson L-002).
-    2. Optional (-TrustRepo): adds the repository to `trustedFolders` in ~/.copilot/config.json so repository
+    2. User environment variables COPILOT_OTEL_ENABLED / COPILOT_OTEL_ENDPOINT / COPILOT_OTEL_CAPTURE_CONTENT (Windows;
+       printed for other platforms): agent sessions that run in the Copilot harness (Agent Host process, e.g. custom
+       agents and prompts in VS Code) and Copilot CLI read OpenTelemetry settings from the environment, not from VS Code
+       settings (lesson L-002). The endpoint is always explicit: with enterprise-managed telemetry settings the
+       default endpoint is not used (verified). Only Copilot-specific variables are set (no generic OTEL_*), so other
+       applications are not affected. Requires fully restarting VS Code.
+    3. Optional (-TrustRepo): adds the repository to `trustedFolders` in ~/.copilot/config.json so repository
        hooks (.github/hooks) run in Copilot CLI sessions (lesson L-001).
        ⚠ Trust is per FOLDER, not per commit: any branch checked out in this folder will run its hooks with your
        user account. Reviews are isolated from this (scripts/parallel-review.ps1 runs in an untrusted worktree),
@@ -61,6 +67,19 @@ foreach ($dir in ($userDirs | Where-Object { Test-Path $_ })) {
     else { Write-Host "Add these settings manually to ${file}:"; $otel | ConvertTo-Json }
 }
 
+$envVars = [ordered]@{ COPILOT_OTEL_ENABLED = 'true'; COPILOT_OTEL_ENDPOINT = $Endpoint; COPILOT_OTEL_CAPTURE_CONTENT = $(if ($NoCaptureContent) { 'false' } else { 'true' }) }
+if ($IsWindows) {
+    foreach ($k in $envVars.Keys) {
+        [Environment]::SetEnvironmentVariable($k, $envVars[$k], 'User')
+        Set-Item "Env:$k" $envVars[$k]
+    }
+    Write-Host "User environment variables set: $(($envVars.Keys | ForEach-Object { "$_=$($envVars[$_])" }) -join ', ')"
+}
+else {
+    Write-Host 'Add to your shell profile (then restart VS Code from that shell):'
+    foreach ($k in $envVars.Keys) { Write-Host "  export $k=$($envVars[$k])" }
+}
+
 if ($TrustRepo) {
     Write-Warning 'Trusting this folder lets ANY branch checked out here run its .github/hooks with your account.'
     $cliConfig = Join-Path ($env:COPILOT_HOME ?? (Join-Path $HOME '.copilot')) 'config.json'
@@ -78,4 +97,4 @@ else {
     Write-Host 'Copilot CLI hooks not enabled (use -TrustRepo to opt in; see lesson L-001).'
 }
 
-Write-Host 'Done. Reload VS Code (Developer: Reload Window) and start the stack: docker compose -f observability/compose.yaml up -d'
+Write-Host 'Done. FULLY restart VS Code (close every window: environment variables are read at process start) and start the stack: docker compose -f observability/compose.yaml up -d'
