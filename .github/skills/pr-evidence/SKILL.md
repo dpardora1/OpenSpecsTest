@@ -32,10 +32,15 @@ dotnet test --logger "console;verbosity=normal"             # resultado por test
 
 ## Crear la PR (como el bot)
 
-`pr-author` **no tiene herramienta de edición de ficheros** (a propósito): genera el cuerpo en un fichero temporal **desde la terminal**, con un here-string de **comillas simples** (L-006) e insertando los datos con `.Replace()`:
+`pr-author` **no tiene herramienta de edición de ficheros** (a propósito): genera el cuerpo en un fichero temporal **desde la terminal**, con un here-string de **comillas simples** (L-006) e insertando los datos con `.Replace()`.
+
+**Seguridad (CWE-94):** el cuerpo cita material no revisado (diff, informes de revisores). Por eso:
+1. Genera el fichero **antes** de cargar la identidad del bot y en una invocación de terminal **sin** `agent-auth.ps1`.
+2. Ninguna línea del here-string puede empezar por `'@`; si aparece en un fragmento citado, añádele un espacio delante.
+3. Inserta los datos generados por scripts (métricas, tablas de revisión) con `.Replace()` desde ficheros o variables, no pegándolos en el fuente.
 
 ```powershell
-. "$env:SDD_TOOLS/scripts/agent-auth.ps1"
+# Paso 1 · sin identidad del bot: solo genera el fichero
 $metrics = (& "$env:SDD_TOOLS/scripts/sdd-metrics.ps1" -Change <id> | Out-String).Trim()
 $body = Join-Path ([IO.Path]::GetTempPath()) "pr-<id>.md"
 @'
@@ -45,6 +50,11 @@ $body = Join-Path ([IO.Path]::GetTempPath()) "pr-<id>.md"
 
 __METRICS__
 '@.Replace('__METRICS__', $metrics) | Set-Content $body -Encoding utf8
+```
+
+```powershell
+# Paso 2 · con identidad del bot: solo publica
+. "$env:SDD_TOOLS/scripts/agent-auth.ps1"
 gh pr create --base main --head sdd/<id> --title "<tipo>(<cap>): <resumen> (<id>)" `
   --body-file $body --label implementation --milestone "<milestone del Issue>"
 Remove-Item $body

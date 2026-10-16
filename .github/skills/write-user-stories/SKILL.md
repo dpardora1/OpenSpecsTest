@@ -86,10 +86,14 @@ Depende de #12 (add-authentication)
 
 ## 4. Crear los Issues
 
-Este agente **no tiene herramienta de edición de ficheros** (a propósito): el cuerpo se escribe en un fichero temporal **desde la terminal**, con un here-string de **comillas simples** (lección L-006: no interpreta `` ` `` ni `$`):
+Este agente **no tiene herramienta de edición de ficheros** (a propósito): el cuerpo se escribe en un fichero temporal **desde la terminal**, con un here-string de **comillas simples** (lección L-006: no interpreta `` ` `` ni `$`).
+
+**Seguridad (CWE-94):** el cuerpo contiene texto de la idea, que no es de confianza. Por eso:
+1. Escribe **todos** los cuerpos **antes** de cargar la identidad del bot y en una invocación de terminal **sin** `agent-auth.ps1`: si el texto rompiera el here-string, no habría token al alcance.
+2. Ninguna línea del cuerpo puede empezar por `'@`, porque cerraría el here-string. Si aparece, añádele un espacio delante.
 
 ```powershell
-. "$env:SDD_TOOLS/scripts/agent-auth.ps1"                     # identidad del bot (misma sesión de terminal)
+# Paso 1 · sin identidad del bot: solo escribe ficheros temporales
 $body = Join-Path ([IO.Path]::GetTempPath()) "story-<change-id>.md"
 @'
 ### Change ID (OpenSpec)
@@ -97,6 +101,11 @@ $body = Join-Path ([IO.Path]::GetTempPath()) "story-<change-id>.md"
 add-create-booking
 …resto del cuerpo de la sección 3…
 '@ | Set-Content $body -Encoding utf8
+```
+
+```powershell
+# Paso 2 · con identidad del bot: solo publica
+. "$env:SDD_TOOLS/scripts/agent-auth.ps1"
 gh issue create --title "[C4] bookings: crear reserva" --body-file $body `
   --label needs-approval --milestone "M4 · MVP de reservas"
 Remove-Item $body

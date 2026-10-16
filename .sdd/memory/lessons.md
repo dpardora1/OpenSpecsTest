@@ -44,11 +44,11 @@ Memoria procedimental del proceso SDD. **Todos los agentes la leen al empezar** 
 - Ocurrencias: 6 · Estado: **promovida → `pr-guardrails.yml`** (las rutas del proceso exigen label `process`; el workflow corre desde `main`) y CI con el gate de `origin/main`
 
 ### L-006 · Cuerpos de PR/Issue con comillas simples y `--body-file`
-- Origen: F4 PR #4 · el cuerpo publicado tenía `\main\` en lugar de `` `main` `` y perdió una letra (`` `b `` = retroceso en PowerShell)
+- Origen: F4 PR #4 · el cuerpo publicado tenía `\main\` en lugar de `` `main` `` y perdió una letra (`` `b `` = retroceso en PowerShell); process-fixes-f6 · reviewer-security (MEDIUM ×2, inyección por cierre de here-string con el token del bot en sesión)
 - Contexto: en here-strings de comillas dobles de PowerShell el backtick es carácter de escape y rompe el Markdown
-- Regla: genera el Markdown con here-strings de **comillas simples** (`@' … '@`) e inserta los datos con `.Replace('__TOKEN__', $valor)`; publica siempre con `--body-file`; después comprueba el cuerpo publicado (`gh pr view --json body`)
+- Regla: genera el Markdown con here-strings de **comillas simples** (`@' … '@`) e inserta los datos con `.Replace('__TOKEN__', $valor)`; publica siempre con `--body-file`; después comprueba el cuerpo publicado (`gh pr view --json body`). Escribe el fichero **antes** de cargar `agent-auth.ps1` y sin líneas que empiecen por `'@` (el texto puede no ser de confianza: CWE-94)
 - Aplica a: pr-author, po-analyst, retrospective · Tags: github, markdown, powershell
-- Ocurrencias: 1 · Estado: activa
+- Ocurrencias: 2 · Estado: activa
 
 ### L-007 · La ausencia de evidencia es un fallo, nunca un aprobado
 - Origen: F5 revisión paralela · reviewer-spec + reviewer-tests + reviewer-security (HIGH ×3) · iteración 1
