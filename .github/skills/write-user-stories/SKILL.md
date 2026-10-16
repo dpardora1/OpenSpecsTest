@@ -86,13 +86,34 @@ Depende de #12 (add-authentication)
 
 ## 4. Crear los Issues
 
+Este agente **no tiene herramienta de edición de ficheros** (a propósito): el cuerpo se escribe en un fichero temporal **desde la terminal**, con un here-string de **comillas simples** (lección L-006: no interpreta `` ` `` ni `$`).
+
+**Seguridad (CWE-94):** el cuerpo contiene texto de la idea, que no es de confianza. Por eso:
+1. Escribe **todos** los cuerpos **antes** de cargar la identidad del bot y en una invocación de terminal **sin** `agent-auth.ps1`: si el texto rompiera el here-string, no habría token al alcance.
+2. Ninguna línea del cuerpo puede empezar por `'@`, porque cerraría el here-string. Si aparece, añádele un espacio delante.
+
 ```powershell
-. "$env:SDD_TOOLS/scripts/agent-auth.ps1"                                   # identidad del bot
-$body = Join-Path $env:TEMP "story-<change-id>.md"            # escribe el cuerpo aquí (fuera del repo)
+# Paso 1 · sin identidad del bot: solo escribe ficheros temporales
+$body = Join-Path ([IO.Path]::GetTempPath()) "story-<change-id>.md"
+@'
+### Change ID (OpenSpec)
+
+add-create-booking
+…resto del cuerpo de la sección 3…
+'@ | Set-Content $body -Encoding utf8
+```
+
+```powershell
+# Paso 2 · con identidad del bot: solo publica
+. "$env:SDD_TOOLS/scripts/agent-auth.ps1"
 gh issue create --title "[C4] bookings: crear reserva" --body-file $body `
   --label needs-approval --milestone "M4 · MVP de reservas"
+Remove-Item $body
 & "$env:SDD_TOOLS/scripts/sdd-board.ps1" -Issue <n> -Status idea -ChangeId add-create-booking
 ```
+
+- No intentes usar herramientas de creación o edición de ficheros (`create`, `edit`): no están disponibles para este agente.
+- Comprueba el resultado publicado: `gh issue view <n> --json body --jq .body` (sin `\` sueltos ni backticks perdidos).
 
 - Título: `[Cn] <capacidad>: <resumen en minúscula>`; `Cn` según el backlog del ROADMAP (§5, F9) o el siguiente libre.
 - Épica: un Issue `[Épica] …` con una lista de tareas `- [ ] #<n>` que enlaza cada historia.

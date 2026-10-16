@@ -23,7 +23,7 @@ flowchart LR
 docker compose -f observability/compose.yaml up -d
 ```
 
-Después, recarga VS Code (*Developer: Reload Window*).
+Después, **reinicia VS Code por completo** (cierra todas las ventanas): las variables de entorno `COPILOT_OTEL_*` solo se leen al arrancar el proceso.
 
 | Servicio | URL | Notas |
 |---|---|---|
@@ -36,6 +36,7 @@ Para parar: `docker compose -f observability/compose.yaml down`. Para **borrar t
 
 | Fuente | Configuración | Qué aporta |
 |---|---|---|
+| Sesiones de agentes en VS Code (harness de Copilot) | Variables de entorno de usuario `COPILOT_OTEL_ENABLED`, `COPILOT_OTEL_ENDPOINT` (siempre explícito: con ajustes de telemetría gestionados por la enterprise no se usa el endpoint por defecto) y `COPILOT_OTEL_CAPTURE_CONTENT`, que pone `enable-agent-telemetry.ps1` | Trazas de los agentes personalizados y prompts (`/sdd-*`), subagentes y tokens |
 | Copilot Chat (VS Code) | **Ajustes de usuario** (`github.copilot.chat.otel.*`, ámbito *application*: VS Code los ignora en `.vscode/settings.json`). Se aplican con `./scripts/bootstrap/enable-agent-telemetry.ps1` | Trazas de agentes y subagentes, tokens, herramientas. Correlación por rama `sdd/<change>` |
 | Copilot CLI | Variables de entorno (abajo) | Lo mismo + `sdd.change_id`/`sdd.phase` como atributos de recurso |
 | `scripts/sdd-phase.ps1` | Lo invoca el `sdd-conductor` | Inicio/fin de cada fase. Al terminar, publica un span `sdd.phase <fase>`; todas las fases de un change comparten traza |
@@ -63,7 +64,7 @@ Los tokens se suman desde los spans `chat` (los `invoke_agent` llevan totales de
 ## Lecciones de la puesta en marcha (F3)
 
 - **Los hooks del repo solo se ejecutan en carpetas de confianza.** En Copilot CLI la lista está en `~/.copilot/config.json` → `trustedFolders` (no en `settings.json`). `enable-agent-telemetry.ps1 -TrustRepo` la configura de forma **explícita**: la confianza es por carpeta, así que cualquier rama que se haga checkout ahí ejecutará sus hooks. Las revisiones se aíslan en un worktree no confiable (lección L-001).
-- **Los ajustes OTel de Copilot Chat son de usuario**, no de workspace (lección L-002).
+- **Los ajustes OTel de Copilot Chat son de usuario**, no de workspace, y solo cubren el proceso de la extensión. Las sesiones de agentes del harness de Copilot necesitan además las variables `COPILOT_OTEL_*` (lección L-002).
 - **Procesos de vida corta:** cada ejecución del CLI exporta sus contadores una sola vez al terminar, así que `rate()`/`increase()` no devuelven nada. El dashboard usa `max_over_time(...[$__range])` por serie.
 - **Grafana LGTM solo lee el aprovisionamiento de dashboards al arrancar:** tras editar `dashboards/*.json`, ejecuta `docker compose -f observability/compose.yaml restart lgtm`.
 - **Redacción de secretos:** el collector enmascara tokens de GitHub (`gh*_`, `github_pat_`), cabeceras `Bearer/Basic` y claves privadas antes de exportar. Verificado con un token falso en el prompt: no aparece en ningún destino.

@@ -39,7 +39,7 @@ Eres el **pr-author** del ciclo SDD. Tu objetivo es que el humano pueda aprobar 
 
 1. `git status` debe estar **limpio**: cada agente hace commit de su propio trabajo. Si hay cambios sin commit, **no los commitees tú**: para y devuelve la lista al conductor.
 2. `git push -u origin sdd/<change-id>`.
-3. `gh pr create --base main --head sdd/<change-id> --title … --body-file <fichero temporal> --label … --milestone …` (genera el cuerpo en un fichero temporal fuera del repo para evitar problemas de escape).
+3. `gh pr create --base main --head sdd/<change-id> --title … --body-file <fichero temporal> --label … --milestone …`. El cuerpo se genera **desde la terminal** con un here-string de comillas simples y `Set-Content` en un fichero temporal fuera del repo (skill `pr-evidence`, L-006): no tienes herramientas de creación o edición de ficheros.
 4. Comprueba con `gh pr view --json url,author,labels,milestone` que el autor es `app/sdd-agent-mapps` y devuelve la URL.
 
 ## Reglas
